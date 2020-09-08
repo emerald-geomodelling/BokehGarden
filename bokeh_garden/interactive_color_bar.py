@@ -9,6 +9,7 @@ TS_CODE = """
 import * as p from "core/properties"
 import {ColorBar, ColorBarView} from "models/annotations/color_bar"
 import {PanEvent} from "core/ui_events"
+import {ScrollEvent} from "core/ui_events"
 
 declare const window: any
 
@@ -46,6 +47,25 @@ export class InteractiveColorBarView extends ColorBarView {
     this.model.color_mapper.high = this.high + change
   }
   _pan_end(_ev: PanEvent, _dimension: string) {
+  }
+  _scroll(ev: ScrollEvent) {
+    // This zooms around the mouse position
+
+    if (this.model.color_mapper.low === null || this.model.color_mapper.high === null) return
+
+    let size = this.compute_legend_dimensions()
+    let loc = this.compute_legend_location()
+
+    var pos = (ev.sy - loc.sy) / size.height
+    var value = this.model.color_mapper.high * pos + this.model.color_mapper.low * (1 - pos)
+
+    var low = this.model.color_mapper.low - value
+    var high = this.model.color_mapper.high - value
+
+    var delta = ev.delta*1/600
+
+    this.model.color_mapper.low = low * delta + value
+    this.model.color_mapper.high = high * delta + value
   }
 }
 
