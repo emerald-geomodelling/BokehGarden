@@ -64,11 +64,12 @@ export class AnnotationPanTool extends PanTool {
 
   static init_AnnotationPanTool(): void {
     this.prototype.default_view = AnnotationPanToolView
+    this.register_alias("annotation_pan_tool", () => new AnnotationPanTool({dimensions: 'both'}))
   }
-
-
 }
 """
 
 class AnnotationPanTool(bokeh.models.PanTool):
     __implementation__ = bokeh.util.compiler.TypeScript(TS_CODE)
+
+bokeh.models.Tool.register_alias("annotation_pan_tool", lambda: AnnotationPanTool(dimensions="both"))

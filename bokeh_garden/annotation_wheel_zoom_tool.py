@@ -48,9 +48,12 @@ export class AnnotationWheelZoomTool extends WheelZoomTool {
 
   static init_AnnotationWheelZoomTool(): void {
     this.prototype.default_view = AnnotationWheelZoomToolView
+    this.register_alias("annotation_wheel_zoom_tool", () => new AnnotationWheelZoomTool({}))
   }
 }
 """
 
 class AnnotationWheelZoomTool(bokeh.models.WheelZoomTool):
     __implementation__ = bokeh.util.compiler.TypeScript(TS_CODE)
+
+bokeh.models.Tool.register_alias("annotation_wheel_zoom_tool", lambda: AnnotationWheelZoomTool())

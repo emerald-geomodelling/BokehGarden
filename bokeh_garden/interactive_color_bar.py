@@ -57,8 +57,7 @@ export class InteractiveColorBarView extends ColorBarView {
     let loc = this.compute_legend_location()
 
     var pos = (ev.sy - loc.sy) / size.height
-    var value = this.model.color_mapper.high * pos + this.model.color_mapper.low * (1 - pos)
-
+    var value = this.model.color_mapper.high * (1 - pos) + this.model.color_mapper.low * pos
     var low = this.model.color_mapper.low - value
     var high = this.model.color_mapper.high - value
 
