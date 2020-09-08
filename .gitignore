@@ -1,0 +1,10 @@
+*.pyc
+env
+.coverage
+temp_*
+None*
+coverage/
+.ipynb_checkpoints
+build
+dist
+*.egg-info
