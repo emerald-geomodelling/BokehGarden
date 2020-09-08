@@ -62,7 +62,7 @@ export class InteractiveColorBarView extends ColorBarView {
     var low = this.model.color_mapper.low - value
     var high = this.model.color_mapper.high - value
 
-    var delta = ev.delta*1/600
+    var delta = 1 + ev.delta*1/600
 
     this.model.color_mapper.low = low * delta + value
     this.model.color_mapper.high = high * delta + value
