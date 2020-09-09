@@ -48,4 +48,4 @@ class Download(bokeh.models.Div):
 
     def get(self, request_handler):
         request_handler.add_header("Content-Disposition", 'attachment; filename="%s"' % self.name)
-        request_handler.write(self.content)
+        request_handler.write(bytes(self.content))
