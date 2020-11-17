@@ -4,10 +4,12 @@ import socket
 import bokeh.layouts
 import tornado.web
 import tornado.ioloop
+import bokeh.plotting
 import bokeh.core.properties
 import weakref
 import uuid
 import sys
+from . import serverutils
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
@@ -17,29 +19,15 @@ class MainHandler(tornado.web.RequestHandler):
         else:
             self.set_status(404, "Unknown download ID %s (existing: %s)" % (download_id, ",".join(str(key) for key in downloads.keys())))
 
-app = tornado.web.Application([
-    (r"/.*", MainHandler),
-])
+def downloadify():
+    server = serverutils.current_bokeh_tornado_server()
+    if not hasattr(server, "bokeh_garden_download"):
+        server.bokeh_garden_download = True
+        server.add_handlers(r".*", [
+            tornado.web.URLSpec(r"/bokeh-garden/download/.*", MainHandler, name="bokeh-garden-download"),
+        ])
+    return server.reverse_url("bokeh-garden-download")
 
-if hasattr(sys, "_bokeh_garden_download_port"):
-    loop = tornado.ioloop.IOLoop.current()
-    for fd, (sock, handler) in list(loop.handlers.items()):
-        try:
-            if isinstance(sock, socket.socket) and sock.getsockname()[1] == sys._bokeh_garden_download_port:
-                loop.close_fd(fd)
-                loop.remove_handler(fd)
-        except:
-            loop.remove_handler(fd)
-
-sys._bokeh_garden_download_port = 8912
-for attempt in range(100):
-    try:
-        app.listen(sys._bokeh_garden_download_port)
-    except:
-        sys._bokeh_garden_download_port += 1
-    else:
-        break
-    
 downloads = weakref.WeakValueDictionary()
 
 class Download(bokeh.models.Div):
@@ -51,11 +39,11 @@ class Download(bokeh.models.Div):
     filename = bokeh.core.properties.String(default="file.txt", serialized=False)
 
     def __init__(self, **kw):
+        download_url = downloadify()
         self._download_id = str(uuid.uuid4())
         downloads[self._download_id] = self
-        
         bokeh.models.Div.__init__(self, **kw)
-        self.text = "<a href='http://localhost:8912/%s' target='_new'>%s</a>" % (self._download_id, self.text)
+        self.text = "<a href='%s/%s' target='_new'>%s</a>" % (download_url, self._download_id, self.text)
 
     def get(self, request_handler):
         request_handler.add_header("Content-Disposition", 'attachment; filename="%s"' % self.filename)
