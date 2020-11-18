@@ -11,6 +11,7 @@ import uuid
 import sys
 from . import serverutils
 from bokeh.util.compiler import TypeScript
+import hashlib
 
 TS_CODE = """
     import * as p from "core/properties"
@@ -33,15 +34,27 @@ TS_CODE = """
         var self = this;
         if (self.dialogEl == null) {
           self.dialogEl = jQuery(`
-             <form method="post" action="${self.model.upload_url}/${self.model.upload_id}" enctype="multipart/form-data" target="_">
+             <form
+              method="post"
+              action="${self.model.upload_url}/${self.model.upload_id}"
+              enctype="multipart/form-data"
+              target="bokeh-garden-upload-iframe-${self.model.upload_id}">
                <input class="bokeh-garden-upload-file" name="file" type="file" accept="${self.model.accept}"></file>
                <input class="bokeh-garden-upload-submit" type="submit" style="display: none;"></input>
+               <iframe
+                class="bokeh-garden-upload-iframe"
+                name="bokeh-garden-upload-iframe-${self.model.upload_id}"
+                src="#" style="display: none;"></iframe>
              <form>
           `)[0]
           jQuery(self.dialogEl).find(".bokeh-garden-upload-file").on('change', function() {
-            console.log("XXXXXXXXXXXXXXXXX");
+            jQuery(self.dialogEl).find(".bokeh-garden-upload-file").css({background: "red"})
             jQuery(self.dialogEl).find(".bokeh-garden-upload-submit").click()
           })
+          jQuery(self.dialogEl).find(".bokeh-garden-upload-iframe").on('load', function() {
+            jQuery(self.dialogEl).find(".bokeh-garden-upload-file").css({background: "inherit"})
+          })
+
           self.el.appendChild(self.dialogEl)
         }
 
@@ -109,10 +122,6 @@ def uploadify():
 
 uploads = weakref.WeakValueDictionary()
 
-class SerializableProperty(property):
-    def serializable_value(self, value):
-        return value
-
 class Upload(bokeh.models.Widget):
     # __view_model__ = bokeh.models.Widget.__view_model__
     # __view_module__ = bokeh.models.Widget.__view_module__
@@ -121,21 +130,24 @@ class Upload(bokeh.models.Widget):
     upload_id = bokeh.core.properties.String()
     upload_url = bokeh.core.properties.String()
 
-    @SerializableProperty
-    def value(self):
+    value = bokeh.core.properties.String(default="", help="""
+    The file content hash
+    """)
+
+    @property
+    def value_bytes(self):
         return self._value
     
-    @value.setter
-    def value(self, new):
-        old = self._value
+    @value_bytes.setter
+    def value_bytes(self, new):
         self._value = new
-        self.trigger("value", len(old) if old is not None else None, len(new) if new is not None else None)
+        self.value = hashlib.sha1(new).hexdigest()
         
-    mime_type = bokeh.core.properties.String(default="", serialized=False, help="""
+    mime_type = bokeh.core.properties.String(default="", help="""
     The mime type of the selected file.
     """)
 
-    filename = bokeh.core.properties.String(default="", serialized=False, help="""
+    filename = bokeh.core.properties.String(default="", help="""
     The filename of the selected file.
     The file path is not included as browsers do not allow access to it.
     """)
@@ -185,9 +197,9 @@ class Upload(bokeh.models.Widget):
     
     @tornado.gen.coroutine
     def handle_post(self):
-        self.value = self._file["body"]
         self.mime_type = self._file["content_type"]
         self.filename = self._file["filename"]
+        self.value_bytes = self._file["body"]
         print("Post handled")
 
     # Override on_change so that a handler can be set for "value" even
