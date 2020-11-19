@@ -56,7 +56,11 @@ TS_CODE = """
           })
 
           self.el.appendChild(self.dialogEl)
-        }
+        } /* else if (self.model.upload_id) {
+          jQuery(self.dialogEl).attr("action", `${self.model.upload_url}/${self.model.upload_id}`)
+          jQuery(self.dialogEl).attr("target", `bokeh-garden-upload-iframe-${self.model.upload_id}`)
+          jQuery(self.dialogEl).find(".bokeh-garden-upload-file").attr("accept", self.model.accept)
+        } */
 
         // self.dialogEl.style.width = `${self.model.width}px`
         // self.dialogEl.disabled = self.model.disabled
@@ -111,8 +115,7 @@ class MainHandler(tornado.web.RequestHandler):
         else:
             self.set_status(404, "Unknown upload ID %s (existing: %s)" % (upload_id, ",".join(str(key) for key in uploads.keys())))
 
-def uploadify():
-    server = serverutils.current_bokeh_tornado_server()
+def uploadify(server):
     if not hasattr(server, "bokeh_garden_upload"):
         server.bokeh_garden_upload = True
         server.add_handlers(r".*", [
@@ -122,7 +125,7 @@ def uploadify():
 
 uploads = weakref.WeakValueDictionary()
 
-class Upload(bokeh.models.Widget):
+class Upload(serverutils.HTTPModel, bokeh.models.Widget):
     # __view_model__ = bokeh.models.Widget.__view_model__
     # __view_module__ = bokeh.models.Widget.__view_module__
     # __subtype__ = "Upload"
@@ -184,15 +187,16 @@ class Upload(bokeh.models.Widget):
     
     def __init__(self, **kw):
         bokeh.models.Widget.__init__(self, **kw)
-        self.upload_url = uploadify()
+        self._value = None
+
+    def http_init(self):
+        self.upload_url = uploadify(self.bokeh_tornado)
         self.upload_id = str(uuid.uuid4())
         uploads[self.upload_id] = self
-        self._doc = bokeh.plotting.curdoc()
-        self._value = None
         
     def post(self, request_handler):
         self._file = request_handler.request.files["file"][0]
-        self._doc.add_next_tick_callback(self.handle_post)
+        self.document.add_next_tick_callback(self.handle_post)
         request_handler.write(b"Upload succeeded")
     
     @tornado.gen.coroutine

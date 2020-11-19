@@ -14,3 +14,20 @@ def current_bokeh_tornado_server(doc = None):
         bokeh_tornado = http_server.request_callback              # bokeh.server.tornado.BokehTornado
         return bokeh_tornado
         #return handler.__closure__[0].cell_contents.__self__.request_callback
+
+class HTTPModel(object):
+    def properties_with_values(self, include_defaults):
+        self._http_init()
+        return super(HTTPModel, self).properties_with_values(include_defaults)
+
+    @property
+    def bokeh_tornado(self):
+        return self._bokeh_tornado
+    
+    def _http_init(self):
+        if self.document.session_context is not None and not hasattr(self, "_bokeh_tornado"):
+            self._bokeh_tornado = current_bokeh_tornado_server(self.document)
+            self.http_init()
+            
+    def http_init(self):
+        pass

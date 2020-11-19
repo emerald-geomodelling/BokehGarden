@@ -19,8 +19,7 @@ class MainHandler(tornado.web.RequestHandler):
         else:
             self.set_status(404, "Unknown download ID %s (existing: %s)" % (download_id, ",".join(str(key) for key in downloads.keys())))
 
-def downloadify():
-    server = serverutils.current_bokeh_tornado_server()
+def downloadify(server):
     if not hasattr(server, "bokeh_garden_download"):
         server.bokeh_garden_download = True
         server.add_handlers(r".*", [
@@ -30,7 +29,7 @@ def downloadify():
 
 downloads = weakref.WeakValueDictionary()
 
-class Download(bokeh.models.Div):
+class Download(serverutils.HTTPModel, bokeh.models.Div):
     __view_model__ = bokeh.models.Div.__view_model__
     __view_module__ = bokeh.models.Div.__view_module__
     __subtype__ = "Download"
@@ -39,10 +38,13 @@ class Download(bokeh.models.Div):
     filename = bokeh.core.properties.String(default="file.txt", serialized=False)
 
     def __init__(self, **kw):
-        download_url = downloadify()
+        bokeh.models.Div.__init__(self, **kw)
+        self._download_id = None
+        
+    def http_init(self):
+        download_url = downloadify(self.bokeh_tornado)
         self._download_id = str(uuid.uuid4())
         downloads[self._download_id] = self
-        bokeh.models.Div.__init__(self, **kw)
         self.text = "<a href='%s/%s' target='_new'>%s</a>" % (download_url, self._download_id, self.text)
 
     def get(self, request_handler):
