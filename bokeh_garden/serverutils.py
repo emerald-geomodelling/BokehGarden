@@ -13,7 +13,6 @@ def current_bokeh_tornado_server(doc = None):
         http_server = connection_handler.__self__                 # tornado.httpserver.HTTPServer
         bokeh_tornado = http_server.request_callback              # bokeh.server.tornado.BokehTornado
         return bokeh_tornado
-        #return handler.__closure__[0].cell_contents.__self__.request_callback
 
 class HTTPModel(object):
     def properties_with_values(self, include_defaults):

@@ -27,7 +27,6 @@ TS_CODE = """
       connect_signals(): void {
         super.connect_signals()
         this.connect(this.model.change, () => this.render())
-        this.connect(this.model.properties.width.change, () => this.render())
       }
 
       render(): void {
@@ -44,7 +43,7 @@ TS_CODE = """
                <iframe
                 class="bokeh-garden-upload-iframe"
                 name="bokeh-garden-upload-iframe-${self.model.upload_id}"
-                src="#" style="display: none;"></iframe>
+                src="data:text/html,Intentionally%20left%20empty" style="display: none;"></iframe>
              <form>
           `)[0]
           jQuery(self.dialogEl).find(".bokeh-garden-upload-file").on('change', function() {
@@ -56,14 +55,7 @@ TS_CODE = """
           })
 
           self.el.appendChild(self.dialogEl)
-        } /* else if (self.model.upload_id) {
-          jQuery(self.dialogEl).attr("action", `${self.model.upload_url}/${self.model.upload_id}`)
-          jQuery(self.dialogEl).attr("target", `bokeh-garden-upload-iframe-${self.model.upload_id}`)
-          jQuery(self.dialogEl).find(".bokeh-garden-upload-file").attr("accept", self.model.accept)
-        } */
-
-        // self.dialogEl.style.width = `${self.model.width}px`
-        // self.dialogEl.disabled = self.model.disabled
+        }
       }
     }
 
