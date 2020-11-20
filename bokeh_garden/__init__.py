@@ -13,6 +13,7 @@ import bokeh_garden.autocomplete
 import bokeh_garden.tabs
 import bokeh_garden.collection
 import bokeh_garden.plot_collection
+import bokeh_garden.application
 
 
 sys.modules["bokeh.plotting.figure"].FigureOptions.tools.property._default = "annotation_pan_tool,annotation_wheel_zoom_tool,box_zoom,save,reset,help"
