@@ -9,6 +9,7 @@ import bokeh_garden.interactive_color_bar
 import bokeh_garden.upload
 import bokeh_garden.download
 import bokeh_garden.select
+import bokeh_garden.autocomplete
 
 
 sys.modules["bokeh.plotting.figure"].FigureOptions.tools.property._default = "annotation_pan_tool,annotation_wheel_zoom_tool,box_zoom,save,reset,help"
