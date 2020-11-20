@@ -24,7 +24,7 @@ be used both within the framework and in a standalone bokeh app:
 The BokehGarden application framework consists of a very old idea,
 applied to Bokeh, combined with a small tool. The simple idea is to
 create complex UI element from simpler ones by subclassing Bokeh
-widget classes. In the subclass, the __init__() method is used to
+widget classes. In the subclass, the `__init__()` method is used to
 populate the widget with parts and bind callbacks.
 
     class MyForm(bokeh_garden.application.AppWidget, bokeh.layouts.Column):
@@ -67,9 +67,9 @@ easy to store and modify the structure. Example:
                       "children": [{"widget": PressurePlot, "tags": ["wind_map"]},
                                    {"widget": WindPlot, "tags": ["wind_map"]}]}}
                                    
-At each level, it consists of a dictionary with the key "widget"
+At each level, it consists of a dictionary with the key `widget`
 holding a widget class, and other keys being used to generate the
-parameters to __init__ for that class.
+parameters to `__init__()` for that class.
 
 ### Overlays
 
