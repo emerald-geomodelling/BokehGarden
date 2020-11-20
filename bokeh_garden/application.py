@@ -1,6 +1,16 @@
 import weakref
+import bokeh.model
 
 from . import plot_collection
+
+class AppWidget(bokeh.model.Model):
+    appwidget = True
+    @classmethod
+    def __init_subclass__(cls):
+        cls.__view_model__ = cls.__bases__[-1].__view_model__
+        cls.__view_module__ = cls.__bases__[-1].__view_module__
+        cls.__subtype__ = cls.__name__
+        super(AppWidget, cls).__init_subclass__()
 
 class Application(object):
     PlotCollection = plot_collection.PlotCollection
