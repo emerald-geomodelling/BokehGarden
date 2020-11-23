@@ -31,7 +31,13 @@ TS_CODE = """
 
       render(): void {
         var self = this;
+        var token: String;
         if (self.dialogEl == null) {
+          function getCookie(name: String): String {
+            var r = document.cookie.match("(^|\\b)" + name + "=([^;]*)(\\b|$)");
+            return r ? r[2] : "";
+          }
+          token = getCookie("_xsrf");
           self.dialogEl = jQuery(`
              <form
               method="post"
@@ -40,6 +46,7 @@ TS_CODE = """
               target="bokeh-garden-upload-iframe-${self.model.upload_id}">
                <input class="bokeh-garden-upload-file" name="file" type="file" accept="${self.model.accept}"></file>
                <input class="bokeh-garden-upload-submit" type="submit" style="display: none;"></input>
+               <input type="hidden" name="_xsrf" value="${token}"></input>
                <iframe
                 class="bokeh-garden-upload-iframe"
                 name="bokeh-garden-upload-iframe-${self.model.upload_id}"
@@ -113,15 +120,10 @@ def uploadify(server):
         server.add_handlers(r".*", [
             tornado.web.URLSpec(r"/bokeh-garden/upload/.*", MainHandler, name="bokeh-garden-upload"),
         ])
-    return server.reverse_url("bokeh-garden-upload").replace("/.*", "")
 
 uploads = weakref.WeakValueDictionary()
 
 class Upload(serverutils.HTTPModel, bokeh.models.Widget):
-    # __view_model__ = bokeh.models.Widget.__view_model__
-    # __view_module__ = bokeh.models.Widget.__view_module__
-    # __subtype__ = "Upload"
-
     upload_id = bokeh.core.properties.String()
     upload_url = bokeh.core.properties.String()
 
@@ -182,7 +184,8 @@ class Upload(serverutils.HTTPModel, bokeh.models.Widget):
         self._value = None
 
     def http_init(self):
-        self.upload_url = uploadify(self.bokeh_tornado)
+        uploadify(self.bokeh_tornado)
+        self.upload_url = self.base_url + "/bokeh-garden/upload/"
         self.upload_id = str(uuid.uuid4())
         uploads[self.upload_id] = self
         

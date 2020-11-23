@@ -22,6 +22,17 @@ class HTTPModel(object):
     @property
     def bokeh_tornado(self):
         return self._bokeh_tornado
+
+    @property
+    def base_url(self):
+        headers = self.document.session_context.request.headers
+        host = headers["Host"]
+        origin = None
+        if "Origin" in headers:
+            origin = headers["Origin"].split("://")[-1]
+        if origin is None or origin == host:
+            return ""
+        return "http://%s" % (host,)
     
     def _http_init(self):
         if self.document.session_context is not None and not hasattr(self, "_bokeh_tornado"):

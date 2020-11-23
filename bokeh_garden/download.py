@@ -25,7 +25,6 @@ def downloadify(server):
         server.add_handlers(r".*", [
             tornado.web.URLSpec(r"/bokeh-garden/download/.*", MainHandler, name="bokeh-garden-download"),
         ])
-    return server.reverse_url("bokeh-garden-download")
 
 downloads = weakref.WeakValueDictionary()
 
@@ -42,10 +41,10 @@ class Download(serverutils.HTTPModel, bokeh.models.Div):
         self._download_id = None
         
     def http_init(self):
-        download_url = downloadify(self.bokeh_tornado)
+        downloadify(self.bokeh_tornado)
         self._download_id = str(uuid.uuid4())
         downloads[self._download_id] = self
-        self.text = "<a href='%s/%s' target='_new'>%s</a>" % (download_url, self._download_id, self.text)
+        self.text = "<a href='%s%s/%s' target='_new'>%s</a>" % (self.base_url, "/bokeh-garden/download", self._download_id, self.text)
 
     def get(self, request_handler):
         request_handler.add_header("Content-Disposition", 'attachment; filename="%s"' % self.filename)
