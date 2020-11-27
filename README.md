@@ -19,6 +19,10 @@ be used both within the framework and in a standalone bokeh app:
   - That encodes the entry id:s as json, allowing e.g. integers to be
     used as id:s, not just strings.
 
+## Example application
+
+    bokeh serve examples/weather_data_explorer.py
+
 ## Framework usage
 
 The BokehGarden application framework consists of a very old idea,
