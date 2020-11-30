@@ -73,7 +73,20 @@ easy to store and modify the structure. Example:
                                    
 At each level, it consists of a dictionary with the key `widget`
 holding a widget class, and other keys being used to generate the
-parameters to `__init__()` for that class.
+parameters to `__init__()` for that class. `__init__()` will also receive an instance of
+`bokeh_garden.application.Application` as a first argument. This instance is shared among all
+widgets created using the layout. The layout above would translate into
+
+
+    layout_instance = bokeh_garden.tabs.Tabs(
+        app,
+        Data=DataLoaderForm(app),
+        Sea=bokeh.models.layouts.Column(
+            *[WavesPlot(app, unit="kn"),
+              CurentsPlot(app, unit="kn")]),
+        Air=bokeh.models.layouts.Row(
+            *[PressurePlot(app, tags=["wind_map"]),
+              WindPlot(app, tags=["wind_map"])]))
 
 ### Overlays
 
