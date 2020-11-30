@@ -1,0 +1,18 @@
+bokeh==2.3.0.dev8
+-e git+git@github.com:emerald-geomodelling/BokehGarden.git@12d76d13358e48c3c4f7ed46bcc2a258800a5163#egg=bokeh_garden
+certifi==2020.11.8
+Jinja2==3.0.0a1
+MarkupSafe==2.0.0a1
+numpy==1.19.4
+packaging==20.7
+pandas==1.1.4
+Pillow==8.0.1
+pygrib==2.0.6
+pyparsing==3.0.0b1
+pyproj==3.0.0.post1
+python-dateutil==2.8.1
+pytz==2020.4
+PyYAML==5.3.1
+six==1.15.0
+tornado==6.1
+typing-extensions==3.7.4.3
