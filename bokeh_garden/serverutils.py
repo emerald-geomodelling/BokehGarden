@@ -1,4 +1,28 @@
 import bokeh.plotting
+import bokeh.application.application
+import bokeh.document.document
+import bokeh.util.callback_manager
+
+def on_session_created(self, *callbacks):
+    if not hasattr(self, "_session_created_callbacks"):
+        self._session_created_callbacks = set()
+    for callback in callbacks:
+        bokeh.util.callback_manager._check_callback(callback, ('session_context',))
+        self._session_created_callbacks.add(callback)
+        if self.session_context is not None:
+            callback(self.session_context)
+bokeh.document.document.Document.on_session_created = on_session_created
+
+old_on_session_created = bokeh.application.application.Application.on_session_created
+async def on_session_created(self, session_context):
+    await old_on_session_created(self, session_context)
+    doc = session_context._document
+    if hasattr(doc, "_session_created_callbacks"):
+        for callback in doc._session_created_callbacks:
+            await callback(session_context)
+    return None
+bokeh.application.application.Application.on_session_created = on_session_created
+
 
 def current_bokeh_tornado_server(doc = None):
     """Returns the current bokeh.server.tornado.BokehTornado instance, or
@@ -15,9 +39,15 @@ def current_bokeh_tornado_server(doc = None):
         return bokeh_tornado
 
 class HTTPModel(object):
-    def properties_with_values(self, include_defaults):
+    def _attach_document(self, doc):
+        try:
+            return super(HTTPModel, self)._attach_document(doc)
+        finally:
+            doc.on_session_created(self.on_session_created)
+
+    def on_session_created(self, session_context):
+        print("HTTPModel.on_session_created", self)
         self._http_init()
-        return super(HTTPModel, self).properties_with_values(include_defaults)
 
     @property
     def bokeh_tornado(self):
