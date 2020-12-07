@@ -1,6 +1,11 @@
 import bokeh.themes
+import importlib
 
 from . import collection
+
+def load_cls(name):
+    modname, clsname = name.rsplit(".", 1)
+    return getattr(importlib.import_module(modname), clsname)
 
 class PlotCollection(collection.Collection):
     def __init__(self, doc, layout = {}, overlays = []):
@@ -23,6 +28,8 @@ class PlotCollection(collection.Collection):
             t = dict(template)
             if "widget" in t:
                 w = t.pop("widget")
+                if isinstance(w, str):
+                    w = load_cls(w)
                 if hasattr(w, "appwidget") or overlays:
                     return w(self, **self.instantiate(t))
                 else:
