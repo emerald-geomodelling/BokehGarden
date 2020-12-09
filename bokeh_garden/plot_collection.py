@@ -30,10 +30,19 @@ class PlotCollection(collection.Collection):
                 w = t.pop("widget")
                 if isinstance(w, str):
                     w = load_cls(w)
+                args = []
                 if hasattr(w, "appwidget") or overlays:
-                    return w(self, **self.instantiate(t))
-                else:
-                    return w(**self.instantiate(t))
+                    args = [self]
+                kwargs = self.instantiate(t)
+                try:
+                    return w(*args, **kwargs)
+                except Exception as e:
+                    raise Exception("%s.%s(*%s, **%s): %s" % (
+                        w.__module__, w.__name__,
+                        args,
+                        kwargs,
+                        e
+                    ))
             else:
                 return {name: self.instantiate(value) for name, value in template.items()}
         else:
