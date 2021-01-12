@@ -41,10 +41,11 @@ class ProgressBar(bokeh_garden.application.AppWidget, bokeh.plotting.Figure):
 
         self._source.data['x_values'] = [self._current_value]
 
-    def set(self, value, status='tasks'):
+    def set(self, value, status=None):
         self._current_value = value
         self._source.data['x_values'] = [self._current_value]
-        self._text.glyph.text = [status]
+        if status is not None:
+            self._text.glyph.text = [status]
 
         if value == 100:
             self.hbar(y=0.5, right="x_values", height=2, left=0, color="#009B77", source=self._source)
