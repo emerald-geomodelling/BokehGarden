@@ -29,7 +29,7 @@ class ProgressBar(bokeh_garden.application.AppWidget, bokeh.plotting.Figure):
                                              **kw)
         self.x_range = Range1d(0, 100, bounds=(0, 100))
         self.y_range = Range1d(0, 1, bounds=(0, 1))
-        self.hbar(y=0.5, right="x_values", height=2, left=0, color="#00779B", source=self._source, level="underlay")
+        self._bar = self.hbar(y=0.5, right="x_values", height=2, left=0, color="#00779B", source=self._source, level="underlay")
         self.grid.grid_line_color = None
         self.toolbar_location = None
         self.yaxis.visible = False
@@ -37,8 +37,8 @@ class ProgressBar(bokeh_garden.application.AppWidget, bokeh.plotting.Figure):
 
     def reset(self):
         self._current_value = 0
-        self.hbar(y=0.5, right="x_values", height=2, left=0, color="#00779B", source=self._source)
-
+        self._bar.glyph.line_color = "#00779B"
+        self._bar.glyph.fill_color = "#00779B"
         self._source.data['x_values'] = [self._current_value]
 
     def set(self, value, status='tasks'):
@@ -47,14 +47,19 @@ class ProgressBar(bokeh_garden.application.AppWidget, bokeh.plotting.Figure):
         self._text.glyph.text = [status]
 
         if value == 100:
-            self.hbar(y=0.5, right="x_values", height=2, left=0, color="#009B77", source=self._source)
-
+            self._bar.glyph.line_color = "#009B77"
+            self._bar.glyph.fill_color = "#009B77"
+            
     def get(self):
         return self._current_value
 
     def fail(self):
         self._success = False
-        self.hbar(y=0.5, right="x_values", height=2, left=0, color="#9B3333", source=self._source)
+        self._bar.glyph.line_color = "#9B3333"
+        self._bar.glyph.fill_color = "#9B3333"
+        if self._current_value < 10:
+            self._current_value = 50
+            self._source.data['x_values'] = [self._current_value]
         return self._success
 
 class ProgressBars(bokeh_garden.application.AppWidget, bokeh.models.layouts.Column):
