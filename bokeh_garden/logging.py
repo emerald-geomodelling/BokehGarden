@@ -1,12 +1,7 @@
 import bokeh.io
 import bokeh_garden
-import pandas as pd
-import tempfile
-import pygrib
-import io
 import bokeh.models.sources
 from bokeh.models import Div
-import examples.grib_log
 import logging
 
 
@@ -17,7 +12,7 @@ class Logging(bokeh_garden.application.AppWidget, bokeh.models.layouts.Column):
         handler = bokeh_garden.logging_handler.LoggingHandler(self)
 
         formatter = logging.Formatter(' %(asctime)s: %(levelname)s: %(name)s: %(message)s', datefmt='%H:%M:%S ')
-        logger= logging.getLogger()
+        logger = logging.getLogger()
 
         handler.setFormatter(formatter)
         logger.addHandler(handler)
@@ -40,13 +35,9 @@ class Logging(bokeh_garden.application.AppWidget, bokeh.models.layouts.Column):
         self._records = ''
 
 class DownloadContent(object):
-
     def __init__(self, widget):
         self.widget = widget
 
     def __bytes__(self):
-        print("bytes", self.widget._link.content)
         f = self.widget._records
-        print('F', f)
-     #   return self.widget._logtext.text.encode("utf-8")
         return f.encode("utf-8")
