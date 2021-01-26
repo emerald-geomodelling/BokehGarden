@@ -4,7 +4,6 @@ import examples.grib_plot
 import examples.grib_upload
 import examples.grib_info_download
 import logging
-import examples.grib_log
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

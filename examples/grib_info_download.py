@@ -3,13 +3,13 @@ import bokeh_garden
 import pandas as pd
 import bokeh.models.sources
 import io
-from bokeh_garden import logging_handler
+import logging
 
 
-logger = logging_handler.logging.getLogger(__name__)
-logger.setLevel(logging_handler.logging.INFO)
-logger.setLevel(logging_handler.logging.ERROR)
-formatter = logging_handler.logging.Formatter('%(asctime)s:%(levelname)s:%(name)s:%(message)s')
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
+formatter = logging.Formatter('%(asctime)s:%(levelname)s:%(name)s:%(message)s')
 
 
 

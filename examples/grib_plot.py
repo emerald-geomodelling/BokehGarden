@@ -1,7 +1,10 @@
 import bokeh.io
 import bokeh_garden
 import pandas as pd
+import logging
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class GribPlot(bokeh_garden.application.AppWidget, bokeh.models.layouts.Column):
     def __init__(self, app, **kw):
