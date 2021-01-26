@@ -10,20 +10,13 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s:%(levelname)s:%(name)s:%(message)s')
 
-#file_handler = logging.FileHandler('test2.log')
-#file_handler.setFormatter(formatter)
-#
-# file_handler = logging.FileHandler('sample.log')
-# file_handler.setLevel(logging.ERROR)
-# file_handler.setFormatter(formatter)
-#logger.addHandler(file_handler)
 
 default_layout = {"widget": bokeh_garden.tabs.Tabs,
                   "Chose file": {"widget": bokeh.models.layouts.Column,
                                  "children": [{"widget": examples.grib_upload.GribUpload},
                                               {"widget": examples.grib_info_download.GribInfoDownload}]},
                   "Plot": {"widget": examples.grib_plot.GribPlot},
-                  "Log": {"widget": examples.grib_log.GribLog}}
+                    "Log": {"widget": bokeh_garden.logging_bg.LoggingBG}}
 
 class WeatherDataExplorer(bokeh_garden.application.Application):
     def __init__(self, layout = default_layout, **kw):
