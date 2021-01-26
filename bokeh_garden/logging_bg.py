@@ -6,7 +6,7 @@ import logging
 
 
 
-class Logging(bokeh_garden.application.AppWidget, bokeh.models.layouts.Column):
+class LoggingBG(bokeh_garden.application.AppWidget, bokeh.models.layouts.Column):
     def __init__(self, app, **kw):
         self._app = app
         handler = bokeh_garden.logging_handler.LoggingHandler(self)
@@ -31,8 +31,8 @@ class Logging(bokeh_garden.application.AppWidget, bokeh.models.layouts.Column):
         bt.on_click(self.clear_log)
 
     def clear_log(self):
-        self._logtext.text = ''
         self._records = ''
+        self._logtext.text = ''
 
 class DownloadContent(object):
     def __init__(self, widget):
