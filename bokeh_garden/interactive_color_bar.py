@@ -45,6 +45,8 @@ export class InteractiveColorBarView extends ColorBarView {
 
     this.model.color_mapper.low = this.low + change
     this.model.color_mapper.high = this.high + change
+
+    this._fixRange()
   }
   _pan_end(_ev: PanEvent, _dimension: string) {
   }
@@ -65,6 +67,18 @@ export class InteractiveColorBarView extends ColorBarView {
 
     this.model.color_mapper.low = low * delta + value
     this.model.color_mapper.high = high * delta + value
+
+    this._fixRange()
+  }
+  _fixRange() {
+    if (this.model.color_mapper.low === null || this.model.color_mapper.high === null) return
+
+    if (this.model.color_mapper.type == "LogColorMapper") {
+      if (this.model.color_mapper.low <= 0) this.model.color_mapper.low = 1e-100
+    }
+    if (this.model.color_mapper.high <= this.model.color_mapper.low) {
+      this.model.color_mapper.high = this.model.color_mapper.low + 1e-100
+    }
   }
 }
 
