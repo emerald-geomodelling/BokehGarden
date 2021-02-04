@@ -5,6 +5,7 @@ from bokeh.models import Div
 import logging
 
 
+
 class LoggingBG(bokeh_garden.application.AppWidget, bokeh.models.layouts.Column):
     def __init__(self, app, **kw):
         self._app = app
@@ -25,16 +26,13 @@ class LoggingBG(bokeh_garden.application.AppWidget, bokeh.models.layouts.Column)
 
         bt = bokeh.models.widgets.Button(label='Clear log')
 
-        self._logentry = bokeh_garden.manual_log_entry.ManualLogEntry(self)
-
-        bokeh.models.layouts.Column.__init__(self, self._logtext, self._link, bt, self._logentry, **kw)
+        bokeh.models.layouts.Column.__init__(self, self._logtext, self._link, bt, **kw)
 
         bt.on_click(self.clear_log)
 
     def clear_log(self):
         self._records = ''
         self._logtext.text = ''
-
 
 class DownloadContent(object):
     def __init__(self, widget):
