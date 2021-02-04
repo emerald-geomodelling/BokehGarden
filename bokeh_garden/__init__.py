@@ -17,5 +17,6 @@ import bokeh_garden.application
 import bokeh_garden.progress_bar
 import bokeh_garden.logging_bg
 import bokeh_garden.logging_handler
+import bokeh_garden.manual_log_entry
 
 sys.modules["bokeh.plotting.figure"].FigureOptions.tools.property._default = "annotation_pan_tool,annotation_wheel_zoom_tool,box_zoom,save,reset,help"
