@@ -22,5 +22,6 @@ class ManualLogEntry(bokeh_garden.application.AppWidget, bokeh.models.layouts.Co
     def add_comments(self):
         logger = logging.getLogger('COMMENT')
         logger.info(self._comments.value)
+        self._comments.value =''
 
 
