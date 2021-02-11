@@ -41,10 +41,19 @@ export class InteractiveColorBarView extends ColorBarView {
     let size = this.compute_legend_dimensions()
     var dist = (ev.sy - this.ev.sy) / size.height
 
-    var change = (this.high - this.low) * dist
-
-    this.model.color_mapper.low = this.low + change
-    this.model.color_mapper.high = this.high + change
+    if (this.model.color_mapper.type == "LogColorMapper") {
+      var high = Math.log10(this.high);
+      var low = Math.log10(this.low)
+      var change = (high - low) * dist
+      low = low + dist
+      high = high + dist
+      this.model.color_mapper.low = Math.pow(10, low)
+      this.model.color_mapper.high = Math.pow(10, high)
+    } else {
+      var change = (this.high - this.low) * dist
+      this.model.color_mapper.low = this.low + change
+      this.model.color_mapper.high = this.high + change
+   }
 
     this._fixRange()
   }
@@ -59,14 +68,31 @@ export class InteractiveColorBarView extends ColorBarView {
     let loc = this.compute_legend_location()
 
     var pos = (ev.sy - loc.sy) / size.height
-    var value = this.model.color_mapper.high * (1 - pos) + this.model.color_mapper.low * pos
-    var low = this.model.color_mapper.low - value
-    var high = this.model.color_mapper.high - value
 
-    var delta = 1 + ev.delta*1/600
+    var high = this.model.color_mapper.high
+    var low = this.model.color_mapper.low
 
-    this.model.color_mapper.low = low * delta + value
-    this.model.color_mapper.high = high * delta + value
+    if (this.model.color_mapper.type == "LogColorMapper") {
+      high = Math.log10(high);
+      low = Math.log10(low)
+    }
+
+    var value = high * (1 - pos) + low * pos
+    var low = low - value
+    var high = high - value
+
+    var delta = 1 - ev.delta*1/600
+
+    low = low * delta + value
+    high = high * delta + value
+
+    if (this.model.color_mapper.type == "LogColorMapper") {
+      high = Math.pow(10, high)
+      low = Math.pow(10, low)
+    }
+
+    this.model.color_mapper.low = low
+    this.model.color_mapper.high = high
 
     this._fixRange()
   }
