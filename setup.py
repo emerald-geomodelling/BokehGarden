@@ -4,7 +4,7 @@ import setuptools
 
 setuptools.setup(
     name='bokeh-garden',
-    version='0.0.5',
+    version='0.0.6',
     description='Additional widgets for Bokeh',
     long_description="""Additional widgets for Bokeh plots:
 
