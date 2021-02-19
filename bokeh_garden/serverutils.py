@@ -2,6 +2,8 @@ import bokeh.plotting
 import bokeh.application.application
 import bokeh.document.document
 import bokeh.util.callback_manager
+import contextvars
+import tornado.web
 
 def on_session_created(self, *callbacks):
     if not hasattr(self, "_session_created_callbacks"):
@@ -74,3 +76,11 @@ class HTTPModel(object):
             
     def http_init(self):
         pass
+
+current_request = contextvars.ContextVar('current_request')
+
+old_execute = tornado.web.RequestHandler._execute
+async def _execute(self, *arg, **kw):
+    current_request.set(self.request)
+    await old_execute(self, *arg, **kw)
+tornado.web.RequestHandler._execute = _execute

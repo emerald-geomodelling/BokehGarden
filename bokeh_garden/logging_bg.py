@@ -9,14 +9,8 @@ import logging
 class LoggingBG(bokeh_garden.application.AppWidget, bokeh.models.layouts.Column):
     def __init__(self, app, **kw):
         self._app = app
-        handler = bokeh_garden.logging_handler.LoggingHandler(self)
 
-        formatter = logging.Formatter(' %(asctime)s: %(levelname)s: %(name)s: %(message)s', datefmt='%H:%M:%S ')
-        logger = logging.getLogger()
-
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-
+        self._records = ''
         self._logtext = Div(text='', width= 400)
 
         self._link = bokeh_garden.download.Download(
@@ -30,6 +24,15 @@ class LoggingBG(bokeh_garden.application.AppWidget, bokeh.models.layouts.Column)
 
         bt.on_click(self.clear_log)
 
+    def _attach_document(self, doc):
+        res = super(LoggingBG, self)._attach_document(doc)
+        bokeh_garden.logging_handler.LoggingHandler.register_widget(self)
+        return res
+        
+    def add_record(self, record):
+        self._records += record + "\n"
+        self._logtext.text = "<pre>%s</pre>" % self._records
+    
     def clear_log(self):
         self._records = ''
         self._logtext.text = ''
