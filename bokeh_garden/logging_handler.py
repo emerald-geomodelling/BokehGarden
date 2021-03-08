@@ -24,29 +24,38 @@ class LoggingHandler(logging.Handler):
         logging.Handler.__init__(self)
 
     def emit_widget_coroutine(self, widget, record):
-        widget.add_record(self.format(record))
+        try:
+            widget.add_record(self.format(record))
+        except Excption as e:
+            print("Logging failure", e)
         
     def emit_widget(self, widget, record):
-        widget.document.add_next_tick_callback(
-            tornado.gen.coroutine(
-                lambda: self.emit_widget_coroutine(widget, record)))
-            
-    def emit(self, record):
-        doc = None
         try:
-            doc = self.current_document.document
-        except:
+            widget.document.add_next_tick_callback(
+                tornado.gen.coroutine(
+                    lambda: self.emit_widget_coroutine(widget, record)))
+        except Exception as e:
+            print("Logging failure for widget", e, widget, record)
+        
+    def emit(self, record):
+        try:
+            doc = None
             try:
-                doc = bokeh.plotting.curdoc()
+                doc = self.current_document.document
             except:
-                pass
-        if doc is None:
-            for widget in self.widgets.values():
-                self.emit_widget(widget, record)                
-        else:
-            docid = id(doc)
-            if docid in self.widgets:
-                self.emit_widget(self.widgets[docid], record)
+                try:
+                    doc = bokeh.plotting.curdoc()
+                except:
+                    pass
+            if doc is None:
+                for widget in self.widgets.values():
+                    self.emit_widget(widget, record)                
+            else:
+                docid = id(doc)
+                if docid in self.widgets:
+                    self.emit_widget(self.widgets[docid], record)
+        except Exception as e:
+            print("Logging failure", e, record)
 
 
 
