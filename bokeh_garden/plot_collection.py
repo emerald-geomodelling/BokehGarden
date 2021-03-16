@@ -28,15 +28,24 @@ class PlotCollection(collection.Collection):
         elif isinstance(template, dict):
             t = dict(template)
             if "widget" in t:
+                if "base" in t:
+                    t["override"], t["widget"] = t.pop("widget"), t.pop("base")
                 w = t.pop("widget")
 
                 # Resolve widget templates
                 while w in self._widgets_template:
                     t_w = dict(self._widgets_template[w])
+                    if "base" in t_w:
+                        t_w["override"], t_w["widget"] = t_w.pop("widget"), t_w.pop("base")
+                    w = t_w.pop("widget", None)
                     t_w.update(t)
                     t = t_w
-                    w = t.pop("widget")
-                
+
+                if "override" in t:
+                    w = t.pop("override")
+                elif w is None:
+                    raise Exception("No override and no widget", t.keys())
+                    
                 if isinstance(w, str):
                     w = load_cls(w)
                 args = []
