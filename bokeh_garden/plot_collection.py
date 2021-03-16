@@ -8,10 +8,11 @@ def load_cls(name):
     return getattr(importlib.import_module(modname), clsname)
 
 class PlotCollection(collection.Collection):
-    def __init__(self, doc, layout = {}, overlays = []):
+    def __init__(self, doc, layout = {}, overlays = [], widgets = {}):
         self._doc = doc
         self._layout_template = layout
         self._overlays_template = overlays
+        self._widgets_template = widgets
         self._layout = None
         self._overlays = []
         collection.Collection.__init__(self)

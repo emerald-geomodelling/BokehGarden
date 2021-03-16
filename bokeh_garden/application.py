@@ -32,14 +32,12 @@ class AppWidget(bokeh.model.Model):
 class Application(object):
     PlotCollection = plot_collection.PlotCollection
     
-    def __init__(self, layout = {}, overlays = [], **kw):
-        self.layout_template = layout
-        self.overlays_template = overlays
+    def __init__(self, **kw):
         self.kw = kw
         self.docs = weakref.WeakKeyDictionary()
 
     def __call__(self, doc):
-        self.docs[doc] = self.PlotCollection(doc, self.layout_template, self.overlays_template, **self.kw)
+        self.docs[doc] = self.PlotCollection(doc, **self.kw)
 
     @property
     def doc(self):
