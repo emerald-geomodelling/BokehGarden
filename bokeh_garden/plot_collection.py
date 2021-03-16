@@ -29,6 +29,14 @@ class PlotCollection(collection.Collection):
             t = dict(template)
             if "widget" in t:
                 w = t.pop("widget")
+
+                # Resolve widget templates
+                while w in self._widgets_template:
+                    t_w = dict(self._widgets_template[w])
+                    t_w.update(t)
+                    t = t_w
+                    w = t.pop("widget")
+                
                 if isinstance(w, str):
                     w = load_cls(w)
                 args = []
