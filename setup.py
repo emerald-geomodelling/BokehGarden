@@ -4,7 +4,7 @@ import setuptools
 
 setuptools.setup(
     name='bokeh-garden',
-    version='0.0.12',
+    version='0.0.13',
     description='Additional widgets for Bokeh',
     long_description="""Additional widgets for Bokeh plots:
 
@@ -22,5 +22,6 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=[
         "bokeh",
+        "streaming-form-data"
     ]
 )

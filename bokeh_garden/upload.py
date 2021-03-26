@@ -12,6 +12,8 @@ import sys
 from . import serverutils
 from bokeh.util.compiler import TypeScript
 import hashlib
+import tempfile
+import os.path
 
 TS_CODE = """
     import * as p from "core/properties"
@@ -106,11 +108,35 @@ TS_CODE = """
     }
 """
 
+import streaming_form_data
+import streaming_form_data.targets
+
+@tornado.web.stream_request_body
 class MainHandler(tornado.web.RequestHandler):
+    def prepare(self, *arg, **kw):
+        self.parser = None
+        self.request.connection.set_max_body_size(1000000000000)
+        tornado.web.RequestHandler.prepare(self, *arg, **kw)
+        
+    def data_received(self, data):
+        if self.parser is None:
+            self.parser = streaming_form_data.StreamingFormDataParser(headers=self.request.headers)
+            self.tempfile = tempfile.mktemp()
+            self.file_target = streaming_form_data.targets.FileTarget(self.tempfile)
+            self.parser.register('file', self.file_target)
+            self.parser.register('_xsrf', streaming_form_data.targets.NullTarget())
+        self.parser.data_received(data)
+        
     def post(self):
+        f = open(self.tempfile, "rb")
+        os.unlink(self.tempfile)
         upload_id = self.request.path.split("/")[-1]
         if upload_id in uploads:
-            uploads[upload_id].post(self)
+            uploads[upload_id].upload(
+                request_handler=self,
+                file=f,
+                filename=self.file_target.multipart_filename,
+                mime_type=self.file_target.multipart_content_type)
         else:
             self.set_status(404, "Unknown upload ID %s (existing: %s)" % (upload_id, ",".join(str(key) for key in uploads.keys())))
 
@@ -130,15 +156,6 @@ class Upload(serverutils.HTTPModel, bokeh.models.Widget):
     value = bokeh.core.properties.String(default="", help="""
     The file content hash
     """)
-
-    @property
-    def value_bytes(self):
-        return self._value
-    
-    @value_bytes.setter
-    def value_bytes(self, new):
-        self._value = new
-        self.value = hashlib.sha1(new).hexdigest()
         
     mime_type = bokeh.core.properties.String(default="", help="""
     The mime type of the selected file.
@@ -181,7 +198,7 @@ class Upload(serverutils.HTTPModel, bokeh.models.Widget):
     
     def __init__(self, **kw):
         bokeh.models.Widget.__init__(self, **kw)
-        self._value = None
+        self._file = None
 
     def http_init(self):
         uploadify(self.bokeh_tornado)
@@ -189,19 +206,37 @@ class Upload(serverutils.HTTPModel, bokeh.models.Widget):
         self.upload_id = str(uuid.uuid4())
         uploads[self.upload_id] = self
         
-    def post(self, request_handler):
-        self._file = request_handler.request.files["file"][0]
-        self.document.add_next_tick_callback(self.handle_post)
+    def upload(self, request_handler, file, filename, mime_type):
+        if self._file is not None:
+            self._file.close()
+        self._file = file
+        self._filename = filename
+        self._mime_type = mime_type
+        self.document.add_next_tick_callback(self.handle_upload)
         request_handler.write(b"Upload succeeded")
     
     @tornado.gen.coroutine
-    def handle_post(self):
-        self.mime_type = self._file["content_type"]
-        self.filename = self._file["filename"]
-        self.value_bytes = self._file["body"]
+    def handle_upload(self):
+        self.filename = self._filename
+        self.mime_type = self._mime_type
+        self.value = self._filename
         print("Post handled")
 
+    @property
+    def file(self):
+        self._file.seek(0)
+        return self._file
+        
+    @property
+    def value_bytes(self):
+        # Only do this for small file
+        return self.file.read()
+        
     # Override on_change so that a handler can be set for "value" even
     # though that's not a real property...
     def on_change(self, attr, *callbacks):
         bokeh.util.callback_manager.PropertyCallbackManager.on_change(self, attr, *callbacks)
+
+    def __del__(self):
+        if self._file is not None:
+            self._file.close()
