@@ -11,6 +11,7 @@ class LoggingBG(bokeh_garden.application.AppWidget, bokeh.models.layouts.Column)
         self._app = app
 
         self._records = ''
+        self._queue = []
         self._logtext = Div(text='', style={"overflow": "auto", "width": "100%"}, **kw)
 
         self._link = bokeh_garden.download.Download(
@@ -27,11 +28,18 @@ class LoggingBG(bokeh_garden.application.AppWidget, bokeh.models.layouts.Column)
     def _attach_document(self, doc):
         res = super(LoggingBG, self)._attach_document(doc)
         bokeh_garden.logging_handler.LoggingHandler.register_widget(self)
+        doc.add_periodic_callback(lambda : self._handle_queue(), 500)
         return res
+
+    def _handle_queue(self):
+        queue = self._queue
+        self._queue = []
+        if queue:
+            self._records = self._records + "\n".join(queue) + "\n"
+            self._logtext.text = "<pre>%s</pre>" % self._records
         
     def add_record(self, record):
-        self._records += record + "\n"
-        self._logtext.text = "<pre>%s</pre>" % self._records
+        self._queue.append(record)
     
     def clear_log(self):
         self._records = ''
