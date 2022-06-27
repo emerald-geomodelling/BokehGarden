@@ -60,7 +60,7 @@ layout of an application declaratively. It is equivalent to
 instantiating widgets, sending them as parameters when instantiating
 other widgets to gradually build up the application layout, just like
 you normally do in bokeh. However, since it's data, not code, it's
-easy to store and modify the structure. Example:
+easy to store and modify the structure. Example layout data as python code:
 
     layout = {"widget": "bokeh_garden.tabs.Tabs",
               "Data": {"widget": "weather.DataLoaderForm"},
@@ -70,13 +70,17 @@ easy to store and modify the structure. Example:
               "Air": {"widget": "bokeh.models.layouts.Row",
                       "children": [{"widget": "weather.PressurePlot", "tags": ["wind_map"]},
                                    {"widget": "weather.WindPlot", "tags": ["wind_map"]}]}}
-                                   
-At each level, it consists of a dictionary with the key `widget`
-holding the name (and module path) of a widget class, and other keys being used to generate the
-parameters to `__init__()` for that class. `__init__()` will also receive an instance of
+
+At each level, the layout data structure consists of a dictionary
+
+    {"widget": "modulename.submodulename.classname", "initparamname1": "initparamvalue1", "initparamname2": "initparamvalue2", ... } 
+
+with the key `widget` holding the name (and module path) of a widget class, and other keys being used to generate the
+parameters to `__init__()` for that class. For scalar values, these are just passed as-is, but for dictionaries and lists, they are first instantiated the same way recursively.
+
+`__init__()` will also receive an instance of
 `bokeh_garden.application.Application` as a first argument. This instance is shared among all
 widgets created using the layout. The layout above would translate into
-
 
     layout_instance = bokeh_garden.tabs.Tabs(
         app,
@@ -87,6 +91,29 @@ widgets created using the layout. The layout above would translate into
         Air=bokeh.models.layouts.Row(
             *[weather.PressurePlot(app, tags=["wind_map"]),
               weather.WindPlot(app, tags=["wind_map"])]))
+
+For larger applications is recomended to store this data structure as a separate yaml file.
+This makes getting a quick overview over the layout easier, as well as eases merging layout
+changes in git. Here's the same data as above but in yaml syntax:
+
+    layout:
+      widget: bokeh_garden.tabs.Tabs
+      Data:
+        widget: weather.DataLoaderForm
+      Sea:
+        widget: bokeh.models.layouts.Column
+        children:
+          - widget: weather.WavesPlot
+            unit: kn
+          - widget: weather.CurentsPlot
+            unit: kn
+      Air:
+        widget: bokeh.models.layouts.Row
+        children:
+          - widget: weather.PressurePlot
+            tags: ["wind_map"]
+          - widget: weather.WindPlot
+            tags: ["wind_map"]
 
 ### Overlays
 
