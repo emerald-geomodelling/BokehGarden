@@ -62,17 +62,17 @@ other widgets to gradually build up the application layout, just like
 you normally do in bokeh. However, since it's data, not code, it's
 easy to store and modify the structure. Example:
 
-    layout = {"widget": bokeh_garden.tabs.Tabs,
-              "Data": {"widget": DataLoaderForm},
-              "Sea": {"widget": bokeh.models.layouts.Column,
-                      "children": [{"widget": WavesPlot, "unit": "kn"},
-                                   {"widget": CurentsPlot, "unit": "kn"}]},
-              "Air": {"widget": bokeh.models.layouts.Row,
-                      "children": [{"widget": PressurePlot, "tags": ["wind_map"]},
-                                   {"widget": WindPlot, "tags": ["wind_map"]}]}}
+    layout = {"widget": "bokeh_garden.tabs.Tabs",
+              "Data": {"widget": "weather.DataLoaderForm"},
+              "Sea": {"widget": "bokeh.models.layouts.Column",
+                      "children": [{"widget": "weather.WavesPlot", "unit": "kn"},
+                                   {"widget": "weather.CurentsPlot", "unit": "kn"}]},
+              "Air": {"widget": "bokeh.models.layouts.Row",
+                      "children": [{"widget": "weather.PressurePlot", "tags": ["wind_map"]},
+                                   {"widget": "weather.WindPlot", "tags": ["wind_map"]}]}}
                                    
 At each level, it consists of a dictionary with the key `widget`
-holding a widget class, and other keys being used to generate the
+holding the name (and module path) of a widget class, and other keys being used to generate the
 parameters to `__init__()` for that class. `__init__()` will also receive an instance of
 `bokeh_garden.application.Application` as a first argument. This instance is shared among all
 widgets created using the layout. The layout above would translate into
@@ -80,13 +80,13 @@ widgets created using the layout. The layout above would translate into
 
     layout_instance = bokeh_garden.tabs.Tabs(
         app,
-        Data=DataLoaderForm(app),
+        Data=weather.DataLoaderForm(app),
         Sea=bokeh.models.layouts.Column(
-            *[WavesPlot(app, unit="kn"),
-              CurentsPlot(app, unit="kn")]),
+            *[weather.WavesPlot(app, unit="kn"),
+              weather.CurentsPlot(app, unit="kn")]),
         Air=bokeh.models.layouts.Row(
-            *[PressurePlot(app, tags=["wind_map"]),
-              WindPlot(app, tags=["wind_map"])]))
+            *[weather.PressurePlot(app, tags=["wind_map"]),
+              weather.WindPlot(app, tags=["wind_map"])]))
 
 ### Overlays
 
