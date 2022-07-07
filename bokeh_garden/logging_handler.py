@@ -26,7 +26,7 @@ class LoggingHandler(logging.Handler):
     def emit_widget_coroutine(self, widget, record):
         try:
             widget.add_record(self.format(record))
-        except Excption as e:
+        except Exception as e:
             print("Logging failure", e)
         
     def emit_widget(self, widget, record):
