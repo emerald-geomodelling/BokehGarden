@@ -22,6 +22,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=[
         "bokeh",
-        "streaming-form-data"
+        "streaming-form-data",
+        "contextvars"
     ]
 )
