@@ -53,13 +53,16 @@ class HTTPModel(object):
     def on_session_created(self, session_context):
         print("HTTPModel.on_session_created", self)
         self._http_init()
-
+        
     @property
     def bokeh_tornado(self):
         return self._bokeh_tornado
 
     @property
     def base_url(self):
+        if self.document is None or self.document.session_context is None or self.document.session_context.request is None:
+            # This is a bit of a hack... Is there another way we could know?
+            return ""
         headers = self.document.session_context.request.headers
         host = headers["Host"]
         origin = None
