@@ -28,7 +28,7 @@ class JSONSelect(bokeh.models.Select):
         if isinstance(options, dict):
             options = list(options.items())
             options.sort(key=lambda a: str(a[1])) # Sort by label
-        self.options = [(json.dumps(value, default=npencode, sort_keys=True), str(label)) for (value, label) in options]
+        self.options = [(json.dumps(value, default=npencode, sort_keys=True), str(str(value) + ': ' + str(label))) for (value, label) in options]
         if self.options and (self.value is None or self.value not in [option[0] for option in self.options]):
             self.value = [option[0] for option in self.options][0]
 
