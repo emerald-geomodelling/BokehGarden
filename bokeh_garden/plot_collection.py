@@ -1,6 +1,5 @@
 import bokeh.themes
 import importlib
-
 from . import collection
 
 def load_cls(name):

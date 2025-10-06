@@ -49,12 +49,10 @@ export class CustomActionTool extends ActionTool {
 }
 """
 
-class CustomActionTool(bokeh.models.tools.Action):
+class CustomActionTool(bokeh.models.tools.ActionTool):
     __implementation__ = bokeh.util.compiler.TypeScript(TS_CODE)
 
-    icon = bokeh.core.properties.String(
-        default="",
-        help="""data:image URI of icon to render""")
+    icon = bokeh.core.properties.Override(default="")
     tool_name = bokeh.core.properties.String(
         default="",
         help="""Hover title""")

@@ -71,8 +71,8 @@ class Download(BaseDownload, bokeh.models.Div):
     __view_module__ = bokeh.models.Div.__view_module__
     __subtype__ = "Download"
 
-    content = bokeh.core.properties.Any(serialized=False)
-    filename = bokeh.core.properties.String(default="file.txt", serialized=False)
+    content = bokeh.core.properties.NotSerialized(bokeh.core.properties.Any())
+    filename = bokeh.core.properties.NotSerialized(bokeh.core.properties.String(default="file.txt"))
 
     def __init__(self, **kw):
         bokeh.models.Div.__init__(self, **kw)

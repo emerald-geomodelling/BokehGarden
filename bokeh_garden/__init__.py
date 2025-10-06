@@ -20,4 +20,14 @@ import bokeh_garden.logging_bg
 import bokeh_garden.logging_handler
 import bokeh_garden.manual_log_entry
 
-sys.modules["bokeh.plotting.figure"].FigureOptions.tools.property._default = "annotation_pan_tool,annotation_wheel_zoom_tool,box_zoom,save,reset,help"
+# Set default tools for bokeh-garden
+import bokeh.plotting._figure
+_original_figure = bokeh.plotting._figure.figure
+
+def _patched_figure(*args, **kwargs):
+    if 'tools' not in kwargs:
+        kwargs['tools'] = "annotation_pan_tool,annotation_wheel_zoom_tool,box_zoom,save,reset,help"
+    return _original_figure(*args, **kwargs)
+
+bokeh.plotting.figure = _patched_figure
+bokeh.plotting._figure.figure = _patched_figure
