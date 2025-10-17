@@ -1,3 +1,4 @@
+# annotation_wheel_zoom_tool.py
 import bokeh.models
 import bokeh.util.compiler
 
@@ -8,13 +9,11 @@ import {reversed} from "core/util/array"
 import {ScrollEvent} from "core/ui_events"
 
 export class AnnotationWheelZoomToolView extends WheelZoomToolView {
-  model: AnnotationWheelZoomTool
-
+  declare model: AnnotationWheelZoomTool
   annotation: any
 
   _hit_test_renderers(sx: number, sy: number): RendererView | null {
-    const views = this.plot_view.get_renderer_views()
-
+    const views = [...this.plot_view.renderer_views.values()]
     for (const view of reversed(views)) {
       const {level} = view.model
       if ((level == 'annotation' || level == 'overlay') && view.interactive_hit != null) {
@@ -22,38 +21,31 @@ export class AnnotationWheelZoomToolView extends WheelZoomToolView {
           return view
       }
     }
-
     return null
   }
 
-  _scroll(ev: ScrollEvent): void {
+  override _scroll(ev: ScrollEvent): boolean {
     this.annotation = this._hit_test_renderers(ev.sx, ev.sy)
-
     if (this.annotation && !this.annotation._scroll) this.annotation = null;
-
     if (this.annotation) {
       this.annotation._scroll(ev)
+      return true
     } else {
-      WheelZoomToolView.prototype._scroll.call(this, ev)
+      return super._scroll(ev)
     }
   }
 }
 
 export class AnnotationWheelZoomTool extends WheelZoomTool {
-  __view_type__: AnnotationWheelZoomToolView
+  declare __view_type__: AnnotationWheelZoomToolView
 
-  constructor(attrs?: Partial<WheelZoomTool.Attrs>) {
-    super(attrs)
-  }
-
-  static init_AnnotationWheelZoomTool(): void {
+  static {
     this.prototype.default_view = AnnotationWheelZoomToolView
-    this.register_alias("annotation_wheel_zoom_tool", () => new AnnotationWheelZoomTool({}))
   }
 }
 """
 
 class AnnotationWheelZoomTool(bokeh.models.WheelZoomTool):
-    __implementation__ = bokeh.util.compiler.TypeScript(TS_CODE)
+    __implementation__ = bokeh.util.compiler.TypeScript(TS_CODE, file="annotation_wheel_zoom_tool.ts")
 
 bokeh.models.Tool.register_alias("annotation_wheel_zoom_tool", lambda: AnnotationWheelZoomTool())

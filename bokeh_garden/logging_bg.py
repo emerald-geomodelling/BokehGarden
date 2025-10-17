@@ -12,7 +12,7 @@ class LoggingBG(bokeh_garden.application.AppWidget, bokeh.models.layouts.Column)
 
         self._records = ''
         self._queue = []
-        self._logtext = Div(text='', style={"overflow": "auto", "width": "100%"}, **kw)
+        self._logtext = Div(text='', styles={"overflow": "auto", "width": "100%"}, **kw)
 
         self._link = bokeh_garden.download.Download(
             text="Download log",

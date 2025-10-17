@@ -1,3 +1,4 @@
+# image.py - Fixed for Bokeh 3.8
 import tornado.ioloop
 import tornado.web
 import socket
@@ -33,15 +34,15 @@ class FastImage(serverutils.HTTPModel, bokeh.models.ImageURL):
     __view_module__ = bokeh.models.ImageURL.__view_module__
     __subtype__ = "FastImage"
 
-    content = bokeh.core.properties.Any(serialized=False)
-    filename = bokeh.core.properties.String(default="file.tif", serialized=False)
+    # Bokeh 3.x: removed serialized parameter
+    content = bokeh.core.properties.Any()
+    filename = bokeh.core.properties.String(default="file.tif")
 
     def __init__(self, **kw):
         bokeh.models.ImageURL.__init__(self, **kw)
         self._image_id = None
-        
+
     def http_init(self):
-        print("XXXXXXXXXXXXXXXX")
         imagify(self.bokeh_tornado)
         self._image_id = str(uuid.uuid4())
         images[self._image_id] = self

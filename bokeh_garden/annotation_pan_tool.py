@@ -1,3 +1,4 @@
+# annotation_pan_tool.py
 import bokeh.models
 import bokeh.util.compiler
 
@@ -8,13 +9,11 @@ import {reversed} from "core/util/array"
 import {PanEvent} from "core/ui_events"
 
 export class AnnotationPanToolView extends PanToolView {
-  model: AnnotationPanTool
-
+  declare model: AnnotationPanTool
   annotation: any
 
   _hit_test_renderers(sx: number, sy: number): RendererView | null {
-    const views = this.plot_view.get_renderer_views()
-
+    const views = [...this.plot_view.renderer_views.values()]
     for (const view of reversed(views)) {
       const {level} = view.model
       if ((level == 'annotation' || level == 'overlay') && view.interactive_hit != null) {
@@ -22,54 +21,46 @@ export class AnnotationPanToolView extends PanToolView {
           return view
       }
     }
-
     return null
   }
 
-  _pan_start(ev: PanEvent): void {
+  override _pan_start(ev: PanEvent): void {
     this.annotation = this._hit_test_renderers(ev.sx, ev.sy)
-
     if (this.annotation && !this.annotation._pan_start) this.annotation = null;
-
     if (this.annotation) {
       this.annotation._pan_start(ev, this.model.dimensions)
     } else {
-      PanToolView.prototype._pan_start.call(this, ev)
+      super._pan_start(ev)
     }
   }
 
-  _pan(ev: PanEvent): void {
+  override _pan(ev: PanEvent): void {
     if (this.annotation) {
       this.annotation._pan(ev, this.model.dimensions)
     } else {
-      PanToolView.prototype._pan.call(this, ev)
+      super._pan(ev)
     }
   }
 
-  _pan_end(ev: PanEvent): void {
+  override _pan_end(ev: PanEvent): void {
     if (this.annotation) {
       this.annotation._pan_end(ev, this.model.dimensions)
     } else {
-      PanToolView.prototype._pan_end.call(this, ev)
+      super._pan_end(ev)
     }
   }
 }
 
 export class AnnotationPanTool extends PanTool {
-  __view_type__: AnnotationPanToolView
+  declare __view_type__: AnnotationPanToolView
 
-  constructor(attrs?: Partial<PanTool.Attrs>) {
-    super(attrs)
-  }
-
-  static init_AnnotationPanTool(): void {
+  static {
     this.prototype.default_view = AnnotationPanToolView
-    this.register_alias("annotation_pan_tool", () => new AnnotationPanTool({dimensions: 'both'}))
   }
 }
 """
 
 class AnnotationPanTool(bokeh.models.PanTool):
-    __implementation__ = bokeh.util.compiler.TypeScript(TS_CODE)
+    __implementation__ = bokeh.util.compiler.TypeScript(TS_CODE, file="annotation_pan_tool.ts")
 
 bokeh.models.Tool.register_alias("annotation_pan_tool", lambda: AnnotationPanTool(dimensions="both"))

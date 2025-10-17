@@ -6,6 +6,7 @@ import bokeh_garden.compiler_cache
 import bokeh_garden.custom_action_tool
 import bokeh_garden.annotation_pan_tool
 import bokeh_garden.annotation_wheel_zoom_tool
+from . import serverutils
 import bokeh_garden.interactive_color_bar
 import bokeh_garden.upload
 import bokeh_garden.download
