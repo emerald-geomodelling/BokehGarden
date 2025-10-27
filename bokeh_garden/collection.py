@@ -4,18 +4,22 @@ import bokeh.util.callback_manager
 
 
 class Collection(bokeh.model.Model):
-	objects = bokeh.core.properties.Dict(bokeh.core.properties.String,
-										 bokeh.core.properties.Instance(bokeh.model.Model))
+	objects = bokeh.core.properties.Dict(
+		bokeh.core.properties.String,
+		bokeh.core.properties.Instance(bokeh.model.Model)
+	)
 
 	def __init__(self, **kwargs):
-		# CRITICAL FIX: Initialize _triggered_attrs BEFORE calling super().__init__()
+		# FIX: Initialize _triggered_attrs BEFORE calling super().__init__()
 		# This prevents AttributeError during Bokeh 3.x property descriptor initialization
 		object.__setattr__(self, '_triggered_attrs', set())
 		super().__init__(**kwargs)
 
 	def trigger(self, attr, old, new, hint=None, setter=None):
-		# In Bokeh 3.x, trigger() requires the property to exist as a descriptor
-		# and accepts hint and setter parameters
+		"""
+		Trigger a change event for an attribute.
+		Thread safety is handled by IOLoop.add_callback in background_task.py
+		"""
 		if attr not in self._triggered_attrs:
 			cls = type(self)
 			if not hasattr(cls, attr):
@@ -26,8 +30,8 @@ class Collection(bokeh.model.Model):
 				setattr(cls, attr, descriptor)
 			self._triggered_attrs.add(attr)
 
-		# Now call the parent trigger method with all parameters
-		super().trigger(attr, old, new, hint=hint, setter=setter)
+		# Use standard Bokeh trigger - threading handled elsewhere
+		super(Collection, self).trigger(attr, old, new, hint=hint, setter=setter)
 
 	def on_change(self, attr, *callbacks):
 		# Ensure property exists before setting up callbacks
@@ -37,6 +41,7 @@ class Collection(bokeh.model.Model):
 			from bokeh.core.property.descriptors import PropertyDescriptor
 			descriptor = PropertyDescriptor(attr, prop)
 			setattr(cls, attr, descriptor)
+
 		bokeh.util.callback_manager.PropertyCallbackManager.on_change(self, attr, *callbacks)
 
 	def __setattr__(self, name, value):
@@ -53,12 +58,10 @@ class Collection(bokeh.model.Model):
 			return
 
 		# For all other attributes (like 'data'), store in the objects dict
-		# This is the core functionality of Collection - dynamic attribute storage
 		try:
 			objects = object.__getattribute__(self, '__dict__').get('objects', None)
 			if objects is None:
-				# objects dict not yet initialized, create it in __dict__ directly
-				# This happens during __init__ before super().__init__() completes
+				# objects dict not yet initialized
 				object.__getattribute__(self, '__dict__')[name] = value
 				return
 
@@ -66,21 +69,22 @@ class Collection(bokeh.model.Model):
 			old = objects.get(name, None)
 			objects[name] = value
 			self.trigger(name, old, value)
-		except (AttributeError, KeyError) as e:
+		except (AttributeError, KeyError):
 			# Fallback: store directly in __dict__
 			object.__getattribute__(self, '__dict__')[name] = value
 
 	def __getattribute__(self, name):
-		# CRITICAL FIX: Handle Bokeh 3.x special attributes that are called during initialization
-		# These must use object.__getattribute__ directly to avoid recursion
+		#FIX for Bokeh 3.x: ALL internal Bokeh attributes must bypass custom logic
+		# This includes _temp_document which is accessed during initialization
 		if name.startswith("_") or name in (
-				"objects", "trigger", "on_change",
+				"objects", "trigger", "on_change", "document",
 				"themed_values", "_property_values", "_unstable_default_values",
-				"_document", "_temp_document", "properties", "properties_with_refs",
+				"_document", "_temp_document",  # _temp_document MUST be here for Bokeh 3.x
+				"properties", "properties_with_refs",
 				"properties_with_values", "query_properties_with_values", "dataspecs",
 				"lookup", "apply_theme", "unapply_theme", "select", "select_one",
-				"set_select", "references", "to_serializable", "__class__",
-				"__dict__", "__setattr__", "__getattribute__"
+				"set_select", "references", "to_serializable",
+				"__class__", "__dict__", "__setattr__", "__getattribute__"
 		):
 			return super(Collection, self).__getattribute__(name)
 
@@ -97,9 +101,9 @@ class Collection(bokeh.model.Model):
 
 	def __getattr__(self, name):
 		# This is called only when __getattribute__ raises AttributeError
-		# Should not normally be reached due to __getattribute__ implementation above
 		if name.startswith("_"):
 			return super(Collection, self).__getattribute__(name)
+
 		try:
 			return super(Collection, self).__getattribute__("objects")[name]
 		except (AttributeError, KeyError):

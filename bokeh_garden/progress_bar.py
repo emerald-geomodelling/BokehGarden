@@ -34,7 +34,6 @@ class ProgressBar(bokeh_garden.application.AppWidget, bokeh.plotting.figure):
 		)
 
 		# NOW after super().__init__() completes, we can safely call glyph methods
-		# because all properties are properly initialized
 		self._bar = self.hbar(
 			y=0.5,
 			right="x_values",
@@ -53,26 +52,34 @@ class ProgressBar(bokeh_garden.application.AppWidget, bokeh.plotting.figure):
 		self._text = self.text(x=50, y=0, text=[''], level="overlay")
 
 	def reset(self):
+		"""Reset progress bar to 0% - safe to call from any thread"""
 		self._current_value = 0
 		self._bar.glyph.line_color = "#00779B"
 		self._bar.glyph.fill_color = "#00779B"
 		self._source.data['x_values'] = [self._current_value]
 
 	def set(self, value, status=None):
+		"""
+		Update progress bar value and status text.
+		NOTE: In Bokeh 3.x, this should be called from the main thread.
+		Thread safety is handled by IOLoop.add_callback in background_task.py
+		"""
 		self._current_value = value
 		self._source.data['x_values'] = [self._current_value]
 
 		if status is not None:
 			self._text.glyph.text = [status]
 
-		if value == 100:
+		if value >= 100:
 			self._bar.glyph.line_color = "#009B77"
 			self._bar.glyph.fill_color = "#009B77"
 
 	def get(self):
+		"""Get current progress value"""
 		return self._current_value
 
 	def fail(self):
+		"""Mark progress bar as failed (red color) - safe to call from main thread"""
 		self._success = False
 		self._bar.glyph.line_color = "#9B3333"
 		self._bar.glyph.fill_color = "#9B3333"
@@ -87,16 +94,17 @@ class ProgressBar(bokeh_garden.application.AppWidget, bokeh.plotting.figure):
 class ProgressBars(bokeh_garden.application.AppWidget, bokeh.models.layouts.Column):
 	def __init__(self, app, **kw):
 		self._app = app
-		# Use super() here too for consistency with multiple inheritance
 		super().__init__(sizing_mode="scale_both", **kw)
 
 	def add_bar(self):
+		"""Add a new progress bar"""
 		self._new_bar = ProgressBar(self._app)
 		self.check_bar()
 		self.children.append(self._new_bar)
 		return self._new_bar
 
 	def check_bar(self):
+		"""Remove completed or failed progress bars"""
 		old_bars = []
 		for bar in self.children:
 			if bar._current_value >= 100 or not bar._success:
@@ -106,5 +114,6 @@ class ProgressBars(bokeh_garden.application.AppWidget, bokeh.models.layouts.Colu
 			self.remove_bar(bar)
 
 	def remove_bar(self, bar):
+		"""Remove a specific progress bar"""
 		idx = self.children.index(bar)
 		self.children.pop(idx)

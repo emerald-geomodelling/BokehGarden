@@ -16,96 +16,121 @@ import tempfile
 import os.path
 
 TS_CODE = """
-    import * as p from "core/properties"
-    import {Widget, WidgetView} from "models/widgets/widget"
+import type * as p from "core/properties"
+import {Widget, WidgetView} from "models/widgets/widget"
 
-    declare function jQuery(...args: any[]): any
+export class UploadView extends WidgetView {
+  declare model: Upload
 
-    export class UploadView extends WidgetView {
-      model: Upload
+  protected dialogEl: HTMLElement | null = null
 
-      protected dialogEl: HTMLInputElement
+  override connect_signals(): void {
+    super.connect_signals()
+  }
 
-      connect_signals(): void {
-        super.connect_signals()
-        this.connect(this.model.change, () => this.render())
+  override render(): void {
+    super.render()
+
+    if (this.dialogEl == null) {
+      const getCookie = (name: string): string => {
+        const r = document.cookie.match("(^|\\\\b)" + name + "=([^;]*)(\\\\b|$)")
+        return r ? r[2] : ""
       }
 
-      render(): void {
-        var self = this;
-        var token: String;
-        if (self.dialogEl == null) {
-          function getCookie(name: String): String {
-            var r = document.cookie.match("(^|\\\\b)" + name + "=([^;]*)(\\\\b|$)");
-            return r ? r[2] : "";
-          }
-          token = getCookie("_xsrf");
-          self.dialogEl = jQuery(`
-             <form
-              method="post"
-              action="${self.model.upload_url}/${self.model.upload_id}"
-              enctype="multipart/form-data"
-              target="bokeh-garden-upload-iframe-${self.model.upload_id}">
-               <input class="bokeh-garden-upload-file" name="file" type="file" accept="${self.model.accept}"></file>
-               <input class="bokeh-garden-upload-submit" type="submit" style="display: none;"></input>
-               <input type="hidden" name="_xsrf" value="${token}"></input>
-               <iframe
-                class="bokeh-garden-upload-iframe"
-                name="bokeh-garden-upload-iframe-${self.model.upload_id}"
-                src="data:text/html,Intentionally%20left%20empty" style="display: none;"></iframe>
-             <form>
-          `)[0]
-          jQuery(self.dialogEl).find(".bokeh-garden-upload-file").on('change', function() {
-            jQuery(self.dialogEl).find(".bokeh-garden-upload-file").css({background: "red"})
-            jQuery(self.dialogEl).find(".bokeh-garden-upload-submit").click()
-          })
-          jQuery(self.dialogEl).find(".bokeh-garden-upload-iframe").on('load', function() {
-            jQuery(self.dialogEl).find(".bokeh-garden-upload-file").css({background: "inherit"})
-          })
+      const token = getCookie("_xsrf")
 
-          self.el.appendChild(self.dialogEl)
-        }
-      }
+      // Create form element
+      const form = document.createElement("form")
+      form.method = "post"
+      form.action = `${this.model.upload_url}${this.model.upload_id}`
+      form.enctype = "multipart/form-data"
+      form.target = `bokeh-garden-upload-iframe-${this.model.upload_id}`
+
+      // Create file input
+      const fileInput = document.createElement("input")
+      fileInput.className = "bokeh-garden-upload-file"
+      fileInput.name = "file"
+      fileInput.type = "file"
+      fileInput.accept = this.model.accept
+
+      // Create submit button (hidden)
+      const submitBtn = document.createElement("input")
+      submitBtn.className = "bokeh-garden-upload-submit"
+      submitBtn.type = "submit"
+      submitBtn.style.display = "none"
+
+      // Create XSRF token input
+      const xsrfInput = document.createElement("input")
+      xsrfInput.type = "hidden"
+      xsrfInput.name = "_xsrf"
+      xsrfInput.value = token
+
+      // Create iframe for form target
+      const iframe = document.createElement("iframe")
+      iframe.className = "bokeh-garden-upload-iframe"
+      iframe.name = `bokeh-garden-upload-iframe-${this.model.upload_id}`
+      iframe.src = "data:text/html,Intentionally%20left%20empty"
+      iframe.style.display = "none"
+
+      // Set up event listeners
+      fileInput.addEventListener("change", () => {
+        fileInput.style.background = "red"
+        submitBtn.click()
+      })
+
+      iframe.addEventListener("load", () => {
+        fileInput.style.background = "inherit"
+      })
+
+      // Append all elements to form
+      form.appendChild(fileInput)
+      form.appendChild(submitBtn)
+      form.appendChild(xsrfInput)
+      form.appendChild(iframe)
+
+      this.dialogEl = form
+      this.shadow_el.appendChild(this.dialogEl)
     }
+  }
+}
 
-    export namespace Upload {
-      export type Attrs = p.AttrsOf<Props>
-      export type Props = Widget.Props & {
-        upload_id: p.Property<string | string[]>
-        upload_url: p.Property<string | string[]>
-        value: p.Property<string | string[]>
-        mime_type: p.Property<string | string[]>
-        filename: p.Property<string | string[]>
-        accept: p.Property<string>
-        multiple: p.Property<boolean>
-      }
-    }
+export namespace Upload {
+  export type Attrs = p.AttrsOf<Props>
+  export type Props = Widget.Props & {
+    upload_id: p.Property<string>
+    upload_url: p.Property<string>
+    value: p.Property<string>
+    mime_type: p.Property<string>
+    filename: p.Property<string>
+    accept: p.Property<string>
+    multiple: p.Property<boolean>
+  }
+}
 
-    export interface Upload extends Upload.Attrs {}
+export interface Upload extends Upload.Attrs {}
 
-    export class Upload extends Widget {
-      properties: Upload.Props
-      __view_type__: UploadView
+export class Upload extends Widget {
+  declare properties: Upload.Props
+  declare __view_type__: UploadView
 
-      constructor(attrs?: Partial<Upload.Attrs>) {
-        super(attrs)
-      }
+  constructor(attrs?: Partial<Upload.Attrs>) {
+    super(attrs)
+  }
 
-      static {
-        this.prototype.default_view = UploadView
+  static {
+    this.prototype.default_view = UploadView
 
-        this.define<Upload.Props>(({Boolean, Str, Array, Or}) => ({
-          upload_id:  [ Str, "" ],
-          upload_url: [ Str, "" ],
-
-          value:      [ Or(Str, Array(Str)), "" ],
-          mime_type:  [ Or(Str, Array(Str)), "" ],
-          filename:   [ Or(Str, Array(Str)), "" ],
-          accept:     [ Str, "" ],
-          multiple:   [ Boolean, false ],
-        }))
-      }
-    }
+    this.define<Upload.Props>(({Bool, Str}) => ({
+      upload_id:  [ Str, "" ],
+      upload_url: [ Str, "" ],
+      value:      [ Str, "" ],
+      mime_type:  [ Str, "" ],
+      filename:   [ Str, "" ],
+      accept:     [ Str, "" ],
+      multiple:   [ Bool, false ],
+    }))
+  }
+}
 """
 
 import streaming_form_data
@@ -116,7 +141,7 @@ import streaming_form_data.targets
 class MainHandler(tornado.web.RequestHandler):
 	def prepare(self, *arg, **kw):
 		self.parser = None
-		self.request.connection.set_max_body_size(1000000000000)
+		self.request.connection.set_max_body_size(1.0e+12)
 		tornado.web.RequestHandler.prepare(self, *arg, **kw)
 
 	def data_received(self, data):
@@ -140,7 +165,7 @@ class MainHandler(tornado.web.RequestHandler):
 				mime_type=self.file_target.multipart_content_type)
 		else:
 			self.set_status(404, "Unknown upload ID %s (existing: %s)" % (
-			upload_id, ",".join(str(key) for key in uploads.keys())))
+				upload_id, ",".join(str(key) for key in uploads.keys())))
 
 
 def uploadify(server):
@@ -190,7 +215,7 @@ class Upload(serverutils.HTTPModel, bokeh.models.Widget):
     `<media type>`:
         A valid `IANA Media Type`_, with no parameters.
 
-    .. _IANA Media Type: [https://www.iana.org/assignments/media-types/media-types.xhtml](https://www.iana.org/assignments/media-types/media-types.xhtml)
+    .. _IANA Media Type: https://www.iana.org/assignments/media-types/media-types.xhtml
     """)
 
 	multiple = bokeh.core.properties.Bool(default=False, help="""
@@ -199,7 +224,6 @@ class Upload(serverutils.HTTPModel, bokeh.models.Widget):
     """)
 
 	__implementation__ = TypeScript(TS_CODE)
-	__javascript__ = ["https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"]
 
 	def __init__(self, **kw):
 		bokeh.models.Widget.__init__(self, **kw)
