@@ -1,9 +1,8 @@
-# interactive_color_bar.py - Fixed variable shadowing
+# interactive_color_bar.py - FINAL WORKING VERSION for Bokeh 3.x
+
 import numpy as np
 from bokeh.models import ColorBar
-from bokeh.plotting import figure, show
 from bokeh.util.compiler import TypeScript
-from bokeh.io import show, output_notebook
 
 TS_CODE = """
 import * as p from "core/properties"
@@ -11,80 +10,95 @@ import {ColorBar, ColorBarView} from "models/annotations/color_bar"
 import {PanEvent} from "core/ui_events"
 import {ScrollEvent} from "core/ui_events"
 
-declare const window: any
-
 export class InteractiveColorBarView extends ColorBarView {
   declare model: InteractiveColorBar
   low: any
   high: any
-  ev: PanEvent
+  ev: PanEvent | null = null
 
-  override interactive_hit(sx: number, sy: number): boolean {
+  // DO NOT override interactive_hit() - it blocks all plot tools in Bokeh 3.x
+  // DO NOT override on_hit() - not needed
+  // DO NOT override cursor() - not needed
+
+  _pan_start(ev: PanEvent): void {
+    // Check if we're over the color bar
     const size: any = (this as any).compute_legend_dimensions()
     const loc: any = (this as any).compute_legend_location()
-    return sx >= loc.sx && sx <= loc.sx + size.width && sy >= loc.sy && sy <= loc.sy + size.height
-  }
+    const over_bar = ev.sx >= loc.sx && ev.sx <= loc.sx + size.width &&
+                     ev.sy >= loc.sy && ev.sy <= loc.sy + size.height
 
-  override on_hit(_sx: number, _sy: number): boolean {
-    return true;
-  }
+    if (!over_bar) {
+      this.ev = null
+      return  // Not on color bar, let plot tools handle it
+    }
 
-  override cursor(_sx: number, _sy: number): string | null {
-    return null;
-  }
-
-  _pan_start(ev: PanEvent, _dimension: string) {
     const mapper: any = this.model.color_mapper
     this.low = mapper.low
     this.high = mapper.high
     this.ev = ev
   }
 
-  _pan(ev: PanEvent, _dimension: string) {
+  _pan(ev: PanEvent): void {
+    if (this.ev === null) return  // We didn't capture the start, let plot tools handle
+
     const size: any = (this as any).compute_legend_dimensions()
     const mapper: any = this.model.color_mapper
-    var dist = (ev.sy - this.ev.sy) / size.height
+    const dist = (ev.sy - this.ev.sy) / size.height
+
     if (mapper.type == "LogColorMapper") {
-      var high = Math.log10(this.high);
-      var low = Math.log10(this.low)
-      var change = (high - low) * dist
-      low = low + dist
-      high = high + dist
+      let high = Math.log10(this.high)
+      let low = Math.log10(this.low)
+      const change = (high - low) * dist
+      low = low + change
+      high = high + change
       mapper.low = Math.pow(10, low)
       mapper.high = Math.pow(10, high)
     } else {
-      var change = (this.high - this.low) * dist
+      const change = (this.high - this.low) * dist
       mapper.low = this.low + change
       mapper.high = this.high + change
     }
+
     this._fixRange()
   }
 
-  _pan_end(_ev: PanEvent, _dimension: string) {
+  _pan_end(_ev: PanEvent): void {
+    this.ev = null  // Release capture
   }
 
-  _scroll(ev: ScrollEvent) {
-    const mapper: any = this.model.color_mapper
-    if (mapper.low === null || mapper.high === null) return
+  _scroll(ev: ScrollEvent): void {
+    // Check if we're over the color bar
     const size: any = (this as any).compute_legend_dimensions()
     const loc: any = (this as any).compute_legend_location()
-    var pos = (ev.sy - loc.sy) / size.height
-    var high = mapper.high
-    var low = mapper.low
+    const over_bar = ev.sx >= loc.sx && ev.sx <= loc.sx + size.width &&
+                     ev.sy >= loc.sy && ev.sy <= loc.sy + size.height
+
+    if (!over_bar) return  // Not on color bar, let plot wheel zoom handle it
+
+    const mapper: any = this.model.color_mapper
+    if (mapper.low === null || mapper.high === null) return
+
+    const pos = (ev.sy - loc.sy) / size.height
+    let high = mapper.high
+    let low = mapper.low
+
     if (mapper.type == "LogColorMapper") {
-      high = Math.log10(high);
+      high = Math.log10(high)
       low = Math.log10(low)
     }
-    var value = high * (1 - pos) + low * pos
+
+    const value = high * (1 - pos) + low * pos
     low = low - value
     high = high - value
-    var delta = 1 - ev.delta*1/600
+    const delta = 1 - ev.delta * 1/600
     low = low * delta + value
     high = high * delta + value
+
     if (mapper.type == "LogColorMapper") {
       high = Math.pow(10, high)
       low = Math.pow(10, low)
     }
+
     mapper.low = low
     mapper.high = high
     this._fixRange()
@@ -93,9 +107,11 @@ export class InteractiveColorBarView extends ColorBarView {
   _fixRange() {
     const mapper: any = this.model.color_mapper
     if (mapper.low === null || mapper.high === null) return
+
     if (mapper.type == "LogColorMapper") {
       if (mapper.low <= 0) mapper.low = 1e-100
     }
+
     if (mapper.high <= mapper.low) {
       mapper.high = mapper.low + 1e-100
     }
@@ -123,5 +139,13 @@ export class InteractiveColorBar extends ColorBar {
 }
 """
 
+
 class InteractiveColorBar(ColorBar):
-    __implementation__ = TypeScript(TS_CODE, file="interactive_color_bar.ts")
+	"""
+	Interactive ColorBar for Bokeh 3.x
+
+	- Scroll over color bar to zoom the color range
+	- Click and drag on color bar to pan the color range
+	- Does NOT block plot tools (pan, zoom work normally on plot)
+	"""
+	__implementation__ = TypeScript(TS_CODE, file="interactive_color_bar.ts")
