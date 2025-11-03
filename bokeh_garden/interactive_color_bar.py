@@ -7,43 +7,124 @@ from bokeh.util.compiler import TypeScript
 TS_CODE = """
 import * as p from "core/properties"
 import {ColorBar, ColorBarView} from "models/annotations/color_bar"
-import {PanEvent} from "core/ui_events"
-import {ScrollEvent} from "core/ui_events"
 
 export class InteractiveColorBarView extends ColorBarView {
   declare model: InteractiveColorBar
   low: any
   high: any
-  ev: PanEvent | null = null
+  drag_start_y: number | null = null
+  _wheel_handler: ((e: WheelEvent) => void) | null = null
+  _mouse_down_handler: ((e: MouseEvent) => void) | null = null
+  _mouse_move_handler: ((e: MouseEvent) => void) | null = null
+  _mouse_up_handler: ((e: MouseEvent) => void) | null = null
 
-  // DO NOT override interactive_hit() - it blocks all plot tools in Bokeh 3.x
-  // DO NOT override on_hit() - not needed
-  // DO NOT override cursor() - not needed
-
-  _pan_start(ev: PanEvent): void {
-    // Check if we're over the color bar
+  // Check if coordinates are over the color bar
+  _is_over_bar(sx: number, sy: number): boolean {
     const size: any = (this as any).compute_legend_dimensions()
     const loc: any = (this as any).compute_legend_location()
-    const over_bar = ev.sx >= loc.sx && ev.sx <= loc.sx + size.width &&
-                     ev.sy >= loc.sy && ev.sy <= loc.sy + size.height
+    return sx >= loc.sx && sx <= loc.sx + size.width &&
+           sy >= loc.sy && sy <= loc.sy + size.height
+  }
 
-    if (!over_bar) {
-      this.ev = null
-      return  // Not on color bar, let plot tools handle it
+  override after_layout(): void {
+    super.after_layout?.()
+    this._setup_event_listeners()
+  }
+
+  _setup_event_listeners(): void {
+    const canvas_el = this.plot_view.canvas_view.events_el
+
+    // Remove old listeners if they exist
+    if (this._wheel_handler) {
+      canvas_el.removeEventListener("wheel", this._wheel_handler)
+    }
+    if (this._mouse_down_handler) {
+      canvas_el.removeEventListener("mousedown", this._mouse_down_handler)
+    }
+    if (this._mouse_move_handler) {
+      canvas_el.removeEventListener("mousemove", this._mouse_move_handler)
+    }
+    if (this._mouse_up_handler) {
+      canvas_el.removeEventListener("mouseup", this._mouse_up_handler)
     }
 
+    // Create new handlers
+    this._wheel_handler = (e: WheelEvent) => {
+      const sx = e.offsetX
+      const sy = e.offsetY
+
+      if (this._is_over_bar(sx, sy)) {
+        e.preventDefault()
+        e.stopPropagation()
+        this._handle_wheel(sx, sy, e.deltaY)
+      }
+    }
+
+    this._mouse_down_handler = (e: MouseEvent) => {
+      const sx = e.offsetX
+      const sy = e.offsetY
+
+      if (this._is_over_bar(sx, sy)) {
+        e.preventDefault()
+        e.stopPropagation()
+        this._handle_pan_start(sy)
+      }
+    }
+
+    this._mouse_move_handler = (e: MouseEvent) => {
+      if (this.drag_start_y !== null) {
+        e.preventDefault()
+        e.stopPropagation()
+        this._handle_pan(e.offsetY)
+      }
+    }
+
+    this._mouse_up_handler = (e: MouseEvent) => {
+      if (this.drag_start_y !== null) {
+        e.preventDefault()
+        e.stopPropagation()
+        this._handle_pan_end()
+      }
+    }
+
+    // Register new listeners
+    canvas_el.addEventListener("wheel", this._wheel_handler, {passive: false})
+    canvas_el.addEventListener("mousedown", this._mouse_down_handler)
+    canvas_el.addEventListener("mousemove", this._mouse_move_handler)
+    canvas_el.addEventListener("mouseup", this._mouse_up_handler)
+  }
+
+  override remove(): void {
+    // Clean up event listeners
+    const canvas_el = this.plot_view.canvas_view.events_el
+    if (this._wheel_handler) {
+      canvas_el.removeEventListener("wheel", this._wheel_handler)
+    }
+    if (this._mouse_down_handler) {
+      canvas_el.removeEventListener("mousedown", this._mouse_down_handler)
+    }
+    if (this._mouse_move_handler) {
+      canvas_el.removeEventListener("mousemove", this._mouse_move_handler)
+    }
+    if (this._mouse_up_handler) {
+      canvas_el.removeEventListener("mouseup", this._mouse_up_handler)
+    }
+    super.remove()
+  }
+
+  _handle_pan_start(sy: number): void {
     const mapper: any = this.model.color_mapper
     this.low = mapper.low
     this.high = mapper.high
-    this.ev = ev
+    this.drag_start_y = sy
   }
 
-  _pan(ev: PanEvent): void {
-    if (this.ev === null) return  // We didn't capture the start, let plot tools handle
+  _handle_pan(sy: number): void {
+    if (this.drag_start_y === null) return
 
     const size: any = (this as any).compute_legend_dimensions()
     const mapper: any = this.model.color_mapper
-    const dist = (ev.sy - this.ev.sy) / size.height
+    const dist = (sy - this.drag_start_y) / size.height
 
     if (mapper.type == "LogColorMapper") {
       let high = Math.log10(this.high)
@@ -62,23 +143,17 @@ export class InteractiveColorBarView extends ColorBarView {
     this._fixRange()
   }
 
-  _pan_end(_ev: PanEvent): void {
-    this.ev = null  // Release capture
+  _handle_pan_end(): void {
+    this.drag_start_y = null
   }
 
-  _scroll(ev: ScrollEvent): void {
-    // Check if we're over the color bar
-    const size: any = (this as any).compute_legend_dimensions()
-    const loc: any = (this as any).compute_legend_location()
-    const over_bar = ev.sx >= loc.sx && ev.sx <= loc.sx + size.width &&
-                     ev.sy >= loc.sy && ev.sy <= loc.sy + size.height
-
-    if (!over_bar) return  // Not on color bar, let plot wheel zoom handle it
-
+  _handle_wheel(_sx: number, sy: number, delta: number): void {
     const mapper: any = this.model.color_mapper
     if (mapper.low === null || mapper.high === null) return
 
-    const pos = (ev.sy - loc.sy) / size.height
+    const size: any = (this as any).compute_legend_dimensions()
+    const loc: any = (this as any).compute_legend_location()
+    const pos = (sy - loc.sy) / size.height
     let high = mapper.high
     let low = mapper.low
 
@@ -90,9 +165,9 @@ export class InteractiveColorBarView extends ColorBarView {
     const value = high * (1 - pos) + low * pos
     low = low - value
     high = high - value
-    const delta = 1 - ev.delta * 1/600
-    low = low * delta + value
-    high = high * delta + value
+    const zoom_delta = 1 - delta * 1/600
+    low = low * zoom_delta + value
+    high = high * zoom_delta + value
 
     if (mapper.type == "LogColorMapper") {
       high = Math.pow(10, high)
