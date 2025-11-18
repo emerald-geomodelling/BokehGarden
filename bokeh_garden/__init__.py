@@ -1,7 +1,15 @@
 import sys
+import warnings
+
+# Suppress Bokeh duplicate model warnings - these are intentional in BokehGarden
+# AppWidget pattern reuses parent view models to avoid creating custom TypeScript implementations
+# This allows widgets to inherit from Bokeh models without implementing custom JavaScript views
+warnings.filterwarnings('ignore', message='.*Duplicate qualified model definition.*', category=Warning)
+
 import bokeh.plotting
 
-import bokeh_garden.compiler_cache
+# Temporarily disabled to test
+# import bokeh_garden.compiler_cache
 
 import bokeh_garden.custom_action_tool
 import bokeh_garden.annotation_pan_tool
@@ -20,6 +28,7 @@ import bokeh_garden.progress_bar
 import bokeh_garden.logging_bg
 import bokeh_garden.logging_handler
 import bokeh_garden.manual_log_entry
+
 
 # Set default tools for bokeh-garden
 import bokeh.plotting._figure
