@@ -27,8 +27,10 @@ class AppWidget(bokeh.model.Model):
     def properties_with_values(self, include_defaults):
         if self._css_name not in self.css_classes:
             self.css_classes.append(self._css_name)
-        return super(AppWidget, self).properties_with_values(include_defaults)
-        
+        # NEW - Bokeh 3.8+ style
+        return super(AppWidget, self).properties_with_values(include_defaults=include_defaults)
+
+
 class Application(object):
     PlotCollection = plot_collection.PlotCollection
     

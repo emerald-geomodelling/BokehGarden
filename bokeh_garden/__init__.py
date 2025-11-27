@@ -1,11 +1,20 @@
 import sys
+import warnings
+
+# Suppress Bokeh duplicate model warnings - these are intentional in BokehGarden
+# AppWidget pattern reuses parent view models to avoid creating custom TypeScript implementations
+# This allows widgets to inherit from Bokeh models without implementing custom JavaScript views
+warnings.filterwarnings('ignore', message='.*Duplicate qualified model definition.*', category=Warning)
+
 import bokeh.plotting
 
-import bokeh_garden.compiler_cache
+# Temporarily disabled to test
+# import bokeh_garden.compiler_cache
 
 import bokeh_garden.custom_action_tool
 import bokeh_garden.annotation_pan_tool
 import bokeh_garden.annotation_wheel_zoom_tool
+from . import serverutils
 import bokeh_garden.interactive_color_bar
 import bokeh_garden.upload
 import bokeh_garden.download
@@ -20,4 +29,15 @@ import bokeh_garden.logging_bg
 import bokeh_garden.logging_handler
 import bokeh_garden.manual_log_entry
 
-sys.modules["bokeh.plotting.figure"].FigureOptions.tools.property._default = "annotation_pan_tool,annotation_wheel_zoom_tool,box_zoom,save,reset,help"
+
+# Set default tools for bokeh-garden
+import bokeh.plotting._figure
+_original_figure = bokeh.plotting._figure.figure
+
+def _patched_figure(*args, **kwargs):
+    if 'tools' not in kwargs:
+        kwargs['tools'] = "annotation_pan_tool,annotation_wheel_zoom_tool,box_zoom,save,reset,help"
+    return _original_figure(*args, **kwargs)
+
+bokeh.plotting.figure = _patched_figure
+bokeh.plotting._figure.figure = _patched_figure

@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bokeh-garden"
+version = "0.0.13"
+description = "Additional widgets for Bokeh"
+readme = "README.md"
+license = "MIT"
+authors = [
+    { name = "Egil Moeller", email = "em@emeraldgeo.no" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "bokeh",
+    "streaming-form-data",
+    "contextvars",
+]
+
+[project.urls]
+Homepage = "https://github.com/EMeraldGeo/BokehGarden"
+Repository = "https://github.com/EMeraldGeo/BokehGarden"
+
+[tool.setuptools.packages.find]
+where = ["."]

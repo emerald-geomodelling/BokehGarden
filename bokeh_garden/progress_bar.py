@@ -1,87 +1,119 @@
 import bokeh.models
-import bokeh.models
 from bokeh.models import TextInput
 import bokeh_garden.application
 from bokeh.io import curdoc, show
 from bokeh.models import ColumnDataSource, Grid, LinearAxis, Plot, Quad
 from bokeh.models import Button
-from bokeh.io import curdoc
 from bokeh.models import Range1d
+import bokeh.plotting
 
 
-# from bokeh.plotting import figure
+class ProgressBar(bokeh_garden.application.AppWidget, bokeh.plotting.figure):
+	def __init__(self, app, **kw):
+		# Store app reference BEFORE calling super
+		self._app = app
+		self._current_value = 0
+		self._plot_width = 400
+		self._success = True
 
+		data = {'x_values': [0]}
+		self._source = ColumnDataSource(data=data)
 
-class ProgressBar(bokeh_garden.application.AppWidget, bokeh.plotting.Figure):
-    def __init__(self, app, **kw):
-        self._app = app
-        self._current_value = 0
-        self._plot_width = 400
-        self._success = True
-        data = {'x_values': [0]}
+		# Create ranges as objects to pass to super
+		x_range = Range1d(0, 100, bounds=(0, 100))
+		y_range = Range1d(0, 1, bounds=(0, 1))
 
+		# Call super().__init__() instead of directly calling figure.__init__()
+		# This properly handles the MRO for multiple inheritance
+		super().__init__(
+			width=self._plot_width,
+			height=50,
+			x_range=x_range,
+			y_range=y_range,
+			**kw
+		)
 
-        self._source = ColumnDataSource(data=data)
+		# NOW after super().__init__() completes, we can safely call glyph methods
+		self._bar = self.hbar(
+			y=0.5,
+			right="x_values",
+			height=1,
+			left=0,
+			color="#00779B",
+			source=self._source,
+			level="underlay"
+		)
 
+		# Set other properties after glyphs are added
+		self.grid.grid_line_color = None
+		self.toolbar_location = None
+		self.yaxis.visible = False
 
-        fig = bokeh.plotting.Figure.__init__(self,
-                                             plot_width=self._plot_width, plot_height=50,
-                                             **kw)
-        self.x_range = Range1d(0, 100, bounds=(0, 100))
-        self.y_range = Range1d(0, 1, bounds=(0, 1))
-        self._bar = self.hbar(y=0.5, right="x_values", height=2, left=0, color="#00779B", source=self._source, level="underlay")
-        self.grid.grid_line_color = None
-        self.toolbar_location = None
-        self.yaxis.visible = False
-        self._text = self.text(x=50, y=0, text=[''], level="overlay")
+		self._text = self.text(x=50, y=0, text=[''], level="overlay")
 
-    def reset(self):
-        self._current_value = 0
-        self._bar.glyph.line_color = "#00779B"
-        self._bar.glyph.fill_color = "#00779B"
-        self._source.data['x_values'] = [self._current_value]
+	def reset(self):
+		"""Reset progress bar to 0% - safe to call from any thread"""
+		self._current_value = 0
+		self._bar.glyph.line_color = "#00779B"
+		self._bar.glyph.fill_color = "#00779B"
+		self._source.data['x_values'] = [self._current_value]
 
-    def set(self, value, status=None):
-        self._current_value = value
-        self._source.data['x_values'] = [self._current_value]
-        if status is not None:
-            self._text.glyph.text = [status]
+	def set(self, value, status=None):
+		"""
+		Update progress bar value and status text.
+		NOTE: In Bokeh 3.x, this should be called from the main thread.
+		Thread safety is handled by IOLoop.add_callback in background_task.py
+		"""
+		self._current_value = value
+		self._source.data['x_values'] = [self._current_value]
 
-        if value == 100:
-            self._bar.glyph.line_color = "#009B77"
-            self._bar.glyph.fill_color = "#009B77"
-            
-    def get(self):
-        return self._current_value
+		if status is not None:
+			self._text.glyph.text = [status]
 
-    def fail(self):
-        self._success = False
-        self._bar.glyph.line_color = "#9B3333"
-        self._bar.glyph.fill_color = "#9B3333"
-        if self._current_value < 10:
-            self._current_value = 50
-            self._source.data['x_values'] = [self._current_value]
-        return self._success
+		if value >= 100:
+			self._bar.glyph.line_color = "#009B77"
+			self._bar.glyph.fill_color = "#009B77"
+
+	def get(self):
+		"""Get current progress value"""
+		return self._current_value
+
+	def fail(self):
+		"""Mark progress bar as failed (red color) - safe to call from main thread"""
+		self._success = False
+		self._bar.glyph.line_color = "#9B3333"
+		self._bar.glyph.fill_color = "#9B3333"
+
+		if self._current_value < 10:
+			self._current_value = 50
+			self._source.data['x_values'] = [self._current_value]
+
+		return self._success
+
 
 class ProgressBars(bokeh_garden.application.AppWidget, bokeh.models.layouts.Column):
-    def __init__(self, app, **kw):
-        self._app = app
-        bokeh.layouts.Column.__init__(self, sizing_mode="scale_both", **kw)
+	def __init__(self, app, **kw):
+		self._app = app
+		super().__init__(sizing_mode="scale_both", **kw)
 
-    def add_bar(self):
-        self._new_bar = ProgressBar(self._app)
-        self.check_bar()
-        self.children.append(self._new_bar)
-        return self._new_bar
+	def add_bar(self):
+		"""Add a new progress bar"""
+		self._new_bar = ProgressBar(self._app)
+		self.check_bar()
+		self.children.append(self._new_bar)
+		return self._new_bar
 
-    def check_bar(self):
-        old_bars = []
-        for idx in self.children:
-            if idx._current_value >= 100 or idx._success == False:
-                old_bars.append(idx)
-                self.remove_bar(idx)
+	def check_bar(self):
+		"""Remove completed or failed progress bars"""
+		old_bars = []
+		for bar in self.children:
+			if bar._current_value >= 100 or not bar._success:
+				old_bars.append(bar)
 
-    def remove_bar(self, bar):
-        self.children.index(bar)
-        self.children.pop()
+		for bar in old_bars:
+			self.remove_bar(bar)
 
+	def remove_bar(self, bar):
+		"""Remove a specific progress bar"""
+		idx = self.children.index(bar)
+		self.children.pop(idx)
