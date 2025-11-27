@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bokeh-garden"
-version = "0.0.14"
+version = "0.0.15"
 description = "Additional widgets for Bokeh"
 readme = "README.md"
 license = "MIT"
